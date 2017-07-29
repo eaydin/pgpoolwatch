@@ -5,11 +5,11 @@ Designed for a cluster of (either 1 or 2) pgpool server(s), 2 repmgr servers. Th
 
 Tested with Python 2.7
 
-For now, the script assumes that it has access to the pgpool database on localhost with the user pgpool and the database postgres. So you should get a successful result from the following command.
+For now, the script assumes that it has access to the pgpool database on `localhost` with the user `pgpool` and the database `postgres`. So you should get a successful result from the following command.
 
 `psql -h localhost -U pgpool -d postgres`
 
-Also, for now it assumes it has access to the repmgr postgresql databases with username repmgr and database repmgr. It also assumes the repmgr binary is located at `/usr/pgsql-9.6/bin/repmgr`
+Also, for now it assumes it has access to the repmgr postgresql databases with username `repmgr` and database `repmgr`. It also assumes the repmgr binary is located at `/usr/pgsql-9.6/bin/repmgr`
 
 These assumptions are hard coded in the script right now, will make them parametric sometime in the future.
 
