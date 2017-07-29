@@ -4,10 +4,8 @@ import cStringIO, operator
 import subprocess as sp
 from datetime import datetime
 
-
-# source http://code.activestate.com/recipes/267662-table-indentation/
-
-
+# The indent function is used to pretty print tables
+# Source of the function: http://code.activestate.com/recipes/267662-table-indentation/
 
 def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
            separateRows=False, prefix='', postfix='', wrapfunc=lambda x:x):
@@ -50,43 +48,8 @@ def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
         if separateRows or hasHeader: print >> output, rowSeparator; hasHeader=False
     return output.getvalue()
 
-# written by Mike Brown
-# http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/148061
-def wrap_onspace(text, width):
-    """
-    A word-wrap function that preserves existing line breaks
-    and most spaces in the text. Expects that existing line
-    breaks are posix newlines (\n).
-    """
-    return reduce(lambda line, word, width=width: '%s%s%s' %
-                  (line,
-                   ' \n'[(len(line[line.rfind('\n')+1:])
-                         + len(word.split('\n',1)[0]
-                              ) >= width)],
-                   word),
-                  text.split(' ')
-                 )
 
-import re
-def wrap_onspace_strict(text, width):
-    """Similar to wrap_onspace, but enforces the width constraint:
-       words longer than width are split."""
-    wordRegex = re.compile(r'\S{'+str(width)+r',}')
-    return wrap_onspace(wordRegex.sub(lambda m: wrap_always(m.group(),width),text),width)
-
-import math
-def wrap_always(text, width):
-    """A simple word-wrap function that wraps text on exactly width characters.
-       It doesn't split the text in words."""
-    return '\n'.join([ text[width*i:width*(i+1)] \
-                       for i in xrange(int(math.ceil(1.*len(text)/width))) ])
-
-
-
-################################################################################################
-
-
-class pool_nodes(object):
+class PoolNodes(object):
     def __init__(self):
         self.node1 = {}
         self.node2 = {}
@@ -342,8 +305,7 @@ class pool_nodes(object):
                 ['SLAVE', self.slave, 'Disk', self.slave_disk]
         ]
         labels = ('Parameter', 'Value')
-        print indent([labels] + data, hasHeader=True, prefix='- ')
-
+        print(indent([labels] + data, hasHeader=True, prefix='- '))
 
 if __name__ == '__main__':
-    p = pool_nodes()
+    p = PoolNodes()
