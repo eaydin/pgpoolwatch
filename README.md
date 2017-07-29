@@ -20,7 +20,7 @@ The script will auto detect which one is the master and which one is the slave.
 An example output would look like:
 
 ```
--bash-4.2$ python watch.py
+-bash-4.2$ python pgpwatch.py
 Output of: show pool_nodes
  node_id | hostname | port | status | lb_weight |  role   | select_cnt | load_balance_node | replication_delay
 ---------+----------+------+--------+-----------+---------+------------+-------------------+-------------------
