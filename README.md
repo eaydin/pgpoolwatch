@@ -62,6 +62,8 @@ Output of: pg_stat_replication
 - xlog_location (slave)  | 0/801FBC8
 - WAL Process (master)   | 0/801FBC8                  | UP
 - WAL Process (slave)    | 0/801FBC8                  | UP
+- Number of Events (all) | 68                         
+- Number of Events (24h) | 12 
 - MASTER                 | dbser2                     | Disk | 5%
 - SLAVE                  | dbser1                     | Disk | 5%
 ```
