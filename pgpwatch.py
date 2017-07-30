@@ -174,8 +174,8 @@ class PoolNodes(object):
                                           "-c", "select * from repl_events where event_timestamp > now() - interval '24 hours'"])
 
 
-                self.row_num_all = int(output_all.split('\n')[-3].strip().split()[0][1:])
-                self.row_num_24 = int(output_24.split('\n')[-3].strip().split()[0][1:])
+                self.row_num_all = str(output_all.split('\n')[-3].strip().split()[0][1:])
+                self.row_num_24 = str(output_24.split('\n')[-3].strip().split()[0][1:])
         except:
             self.row_num_24 = "?"
             self.row_num_all = "?"
@@ -301,6 +301,8 @@ class PoolNodes(object):
                 ['xlog_location (slave)', self.xlog_slave_location],
                 ['WAL Process (master)', master_s2, master_s],
                 ['WAL Process (slave)', slave_s2, slave_s],
+                ['Number of Events (all)', self.row_num_all],
+                ['Number of Events (24h)', self.row_num_24],
                 ['MASTER', self.master, 'Disk', self.master_disk],
                 ['SLAVE', self.slave, 'Disk', self.slave_disk]
         ]
