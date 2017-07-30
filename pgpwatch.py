@@ -247,19 +247,27 @@ class PoolNodes(object):
 
         self.master_status = 0
         if self.master != '':
-            output_master = sp.check_output(["ssh", self.master, "ps aux | egrep 'wal\ssender'"])
-            output_master = output_master.strip()
-            if len(output_master) != 0:
-                self.master_stream = output_master.split()[-1]
-                self.master_status = 1
+            try:
+                output_master = sp.check_output(["ssh", self.master, "ps aux | egrep 'wal\ssender'"])
+                output_master = output_master.strip()
+                if len(output_master) != 0:
+                    self.master_stream = output_master.split()[-1]
+                    self.master_status = 1
+            except:
+                self.master_stream = ''
+                self.master_status = 0
 
         self.slave_status = 0
         if self.slave != '':
-            output_slave = sp.check_output(["ssh", self.slave, "ps aux | egrep 'wal\sreceiver'"])
-            output_slave = output_slave.strip()
-            if len(output_slave) != 0:
-                self.slave_stream = output_slave.split()[-1]
-                self.slave_status = 1
+            try:
+                output_slave = sp.check_output(["ssh", self.slave, "ps aux | egrep 'wal\sreceiver'"])
+                output_slave = output_slave.strip()
+                if len(output_slave) != 0:
+                    self.slave_stream = output_slave.split()[-1]
+                    self.slave_status = 1
+            except:
+                self.slave_stream = ''
+                self.slave_stream = 0
 
     def _run_cluster_show(self):
         try:
