@@ -206,7 +206,7 @@ class PoolNodes(object):
 
     def _get_disk_usage(self, host):
         try:
-            output = sp.check_output(["ssh", host, "df / -h"])
+            output = sp.check_output(["ssh", "-o", "ConnectTimeout=5", host, "df / -h"])
             output = output.split('\n')[1]
             output = output.split()[4]
         except Exception as err:
@@ -248,7 +248,7 @@ class PoolNodes(object):
         self.master_status = 0
         if self.master != '':
             try:
-                output_master = sp.check_output(["ssh", self.master, "ps aux | egrep 'wal\ssender'"])
+                output_master = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.master, "ps aux | egrep 'wal\ssender'"])
                 output_master = output_master.strip()
                 if len(output_master) != 0:
                     self.master_stream = output_master.split()[-1]
@@ -260,7 +260,7 @@ class PoolNodes(object):
         self.slave_status = 0
         if self.slave != '':
             try:
-                output_slave = sp.check_output(["ssh", self.slave, "ps aux | egrep 'wal\sreceiver'"])
+                output_slave = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.slave, "ps aux | egrep 'wal\sreceiver'"])
                 output_slave = output_slave.strip()
                 if len(output_slave) != 0:
                     self.slave_stream = output_slave.split()[-1]
@@ -274,7 +274,7 @@ class PoolNodes(object):
             if self.master == '':
                 self.master = self._find_master()
             if self.master != '':
-                output = sp.check_output(["ssh", self.master, "/usr/pgsql-9.6/bin/repmgr cluster show"])
+                output = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.master, "/usr/pgsql-9.6/bin/repmgr cluster show"])
                 if len(output) > 0:
                     self.cluster_show = output
         except:
