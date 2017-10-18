@@ -1,0 +1,7 @@
+--user=sender@email.com
+--password=SuperSecr3tPassw0rd
+--sender=sender@email.com
+--server=mail.emailcom
+--port=587
+--subject=PGPOOL Status Script - Failure
+--receivers=bill@microsoft.com page@google.com

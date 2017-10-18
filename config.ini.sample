@@ -1,0 +1,3 @@
+[pgp]
+check_period=10
+success_period=5

@@ -102,3 +102,7 @@ ENV/
 
 # PyCharm
 .idea
+
+# Settings files
+args.txt
+config.ini
