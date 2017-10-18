@@ -6,6 +6,47 @@ import ConfigParser
 import io
 import SocketServer
 import threading
+import socket
+
+def check_port(address='localhost', port=5559):
+    s = socket.socket()
+    try:
+        s.connect((address, port))
+        print "Socket is open"
+        del s
+        return True
+    except socket.error as err:
+        print "Socket is closed?: %s" % str(err)
+        del s
+        return False
+
+
+class PGPWRequestHandler(SocketServer.BaseRequestHandler):
+    def handle(self):
+        pass
+
+class PGPWServer(SocketServer.TCPServer):
+    def __init__(self, host='0.0.0.0', port=5559, handler_class=PGPWRequestHandler):
+        self.host = host
+        self.port = port
+        self.handler_class = handler_class
+        self.start()
+
+    def start(self):
+        print "Initiating server..."
+        SocketServer.TCPServer.__init__(self, (self.host, self.port), self.handler_class)
+        return
+
+    def activate(self):
+        print "Activating server..."
+        SocketServer.TCPServer.server_activate(self)
+        return
+
+    def close(self):
+        print "Closing server..."
+        return SocketServer.TCPServer.server_close(self)
+
+
 
 def runpgpwatch(success=False):
 
@@ -76,6 +117,10 @@ if __name__ == '__main__':
     print("Mail on Success:", mail_on_success)
 
     if not args.run_once:
+
+        # run the port things
+        server = PGPWServer('0.0.0.0', 5559)
+
         m = 0
         n = 0
         while True:
@@ -88,6 +133,12 @@ if __name__ == '__main__':
                 runpgpwatch(False)
             n += 1
             time.sleep(check_period)
+            if check_port():
+                print "Let's close the port"
+                server.close()
+            else:
+                print "Let's open the port"
+                server.start()
     else:
         if mail_on_success:
             runpgpwatch(True)
