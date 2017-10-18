@@ -4,8 +4,10 @@ import argparse
 import time
 import ConfigParser
 import io
+import SocketServer
+import threading
 
-def main(success=False):
+def runpgpwatch(success=False):
 
     try:
         output = subprocess.check_output(["/usr/sbin/runuser", "-l", "postgres", "-c", "'/var/lib/pgsql/pgpoolwatch/pgpwatch.py'"])
@@ -79,15 +81,15 @@ if __name__ == '__main__':
         while True:
             if n == success_period or m == 0:
                 if mail_on_success:
-                    main(True)
+                    runpgpwatch(True)
                 n = 0
                 m = 1
             else:
-                main(False)
+                runpgpwatch(False)
             n += 1
             time.sleep(check_period)
     else:
         if mail_on_success:
-            main(True)
+            runpgpwatch(True)
         else:
-            main(False)
+            runpgpwatch(False)
