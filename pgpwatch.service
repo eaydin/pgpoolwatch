@@ -1,0 +1,14 @@
+[Unit]
+Description=PGP Watch
+After=pgpool.service
+Documentation=http://rtfm.veritech.net
+
+[Service]
+Type=simple
+ExecStart=/root/vt/poolstatus.py
+PIDFile=/var/run/pgpwatch/pgpwatch.pid
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
