@@ -103,14 +103,14 @@ def main():
                         body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
                         so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
                         as possible.<br>Also double check the the GSLB
-                        is really routing traffic through me."""..format(socket.gethostname())
+                        is really routing traffic through me.""".format(socket.gethostname())
                         send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
 
                     elif check_port() and (check_port(pgpa) or check_port(pgpb)):
                         print("One of the pgpools is up, so we are bringing ourself down.")
                         server.close()
                         body_text="""This is the {0}.<br>I am the current master, and I used to serve as the DB
-                        instance. Yet one of the pgpools are backup. That's why I am closing port so that the GSLB
+                        instance. Yet one of the pgpools are back online. That's why I am closing port so that the GSLB
                         won't route traffic through me. It is still best that
                         you check on the system manually""".format(socket.gethostname())
                         send_mail(subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
@@ -132,6 +132,7 @@ def main():
             If you are not testing something, this isn't good.
             Please check the cluster.""".format(socket.gethostname())
 
+        time.sleep(10)
 
 if __name__ == '__main__':
     main()
