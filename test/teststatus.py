@@ -61,7 +61,7 @@ def runpgpwatch(success=False):
 
         if success:
             p = subprocess.Popen(["/usr/bin/python", "/root/vt/sendmail.py", "@/root/vt/args.txt",
-                              "--subject=PGPWATCH - Status OK", "--failed-node=none", "--new-master=none", "--body=The pgpwatch script returned fine.<br><br>{0}".format(output.replace("\n", "<br>"))], stdout=subprocess.PIPE)
+                              "--subject=PGPWATCH - Status OK", "--failed-node=none", "--new-master=none", "--body=This is the {0}. The pgpwatch script returned fine.<br><br>{1}".format(socket.gethostname(), output.replace("\n", "<br>"))], stdout=subprocess.PIPE)
             p.communicate()[0]
         return True
 
@@ -71,7 +71,7 @@ def runpgpwatch(success=False):
         print("Output: {0}".format(output_text))
 
         p = subprocess.Popen(["/usr/bin/python", "/root/vt/sendmail.py", "@/root/vt/args.txt",
-                              "--subject=PGPWATCH - Error", "--failed-node=none", "--new-master=none", "--body=The pgpwatch script <b>failed!</b><br><br>{0}".format(output_text.replace("\n", "<br>"))], stdout=subprocess.PIPE)
+                              "--subject=PGPWATCH - Error", "--failed-node=none", "--new-master=none", "--body=This is the {0}.<br>The pgpwatch script <b>failed!</b><br><br>{1}".format(socket.gethostname(), output_text.replace("\n", "<br>"))], stdout=subprocess.PIPE)
         p.communicate()[0]
 
         return False
@@ -168,7 +168,7 @@ if __name__ == '__main__':
                             if check_port():
                                 print("5559 Startup success")
                                 send_mail(subject="PGPWATCH - Status Change - PGP Up",
-                                          body="The PGPServer was down, now switching to <b>up</b> state. <br>Opening port for GSLB.")
+                                          body="This is the {0}. <br>The PGPServer was down, now switching to <b>up</b> state. <br>Opening port for GSLB.".format(socket.gethostname()))
                                 server_status = True
                             else:
                                 print("5559 Startup failed?")
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                             if not check_port():
                                 print("5559 Closeup success")
                                 send_mail(subject="PGPWATCH - Status Change - PGP Down",
-                                          body="The PGPServer was up, now it <b>failed</b>. <br>Closing port for GSLB.")
+                                          body="This is the {0}. The PGPServer was up, now it <b>failed</b>. <br>Closing port for GSLB.".format(socket.gethostname()))
                                 server_status = False
                             else:
                                 print("5559 Closeup failed?")
