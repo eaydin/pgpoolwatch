@@ -5,7 +5,6 @@ import time
 import ConfigParser
 import io
 import SocketServer
-import threading
 import socket
 from operator import xor
 
