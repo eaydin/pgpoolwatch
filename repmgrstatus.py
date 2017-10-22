@@ -6,7 +6,7 @@ import time
 import ConfigParser
 import SocketServer
 import socket
-
+import io
 
 def check_port(address='localhost', port=5559):
     s = socket.socket()
