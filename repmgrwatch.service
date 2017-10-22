@@ -1,0 +1,14 @@
+[Unit]
+Description=Repmgr Watch
+After=postgresql-9.6.service
+Documentation=http://rtfm.veritech.net
+
+[Service]
+Type=simple
+ExecStart=/root/vt/repmgrstatus.py
+PIDFile=/var/run/pgpwatch/repmgrwatch.pid
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
