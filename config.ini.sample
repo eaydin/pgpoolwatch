@@ -7,3 +7,4 @@ mail_on_success=yes
 check_period=10
 pgp_server_1=192.168.168.90
 pg_server_2=192.168.255.90
+force_open_port=yes

@@ -72,7 +72,7 @@ def get_masters():
         return False, []
 
 
-def main(period, pgpa, pgpb):
+def main(period, pgpa, pgpb, force_open_port):
 
     pgpa_s = check_port(pgpa)
     pgpb_s = check_port(pgpb)
@@ -93,12 +93,21 @@ def main(period, pgpa, pgpb):
             else:
                 if masters[0] == socket.gethostname():
                     print("I AM THE MASTER!")
+
+                    if force_open_port and not check_port():
+                        print("Force open port status is set to True. Opening port")
+                        server.start()
+                        body_text = """This is the {0}.<br> I am the current master, and the force_open_port is set
+                        to true. That's why I'm opening port, without caring about
+                        the PGP ports.""".format(socket.gethostname())
+                        send_mail(subject="PGPWATCH - Repmgr - Port Open", body=body_text)
+
                     if not check_port(pgpa) and not check_port(pgpb) and not check_port():
                         print("Everybody is down, and we are not up? Bringing the 5559 up.")
                         server.start()
                         body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
                         so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
-                        as possible.<br>Also double check the the GSLB
+                        as possible.<br>Also double check that the GSLB
                         is really routing traffic through me.""".format(socket.gethostname())
                         send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
 
@@ -170,8 +179,14 @@ if __name__ == '__main__':
         print("Error: {0}".format(str(err)))
         raise SystemError
 
+    try:
+        force_open_port = config.getboolean('repmgr', 'force_open_port')
+    except Exception as err:
+        print("Error while reading force_open_port, setting it to false: {0}".format(str(err)))
+        force_open_port = False
+
     if not pgp_server_1 or not pgp_server_2:
         print("Error: No PGP Servers Specified in the config file. Need two of those.")
         raise SystemError
 
-    main(check_period, pgp_server_1, pgp_server_2)
+    main(check_period, pgp_server_1, pgp_server_2, force_open_port)
