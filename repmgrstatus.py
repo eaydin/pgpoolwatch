@@ -72,12 +72,12 @@ def get_masters():
         return False, []
 
 
-def main(period, pgpa, pgpb, force_open_port):
+def main(period, pgpa, pgpb, force_open_port, port, pgp_port):
 
     pgpa_s = check_port(pgpa)
     pgpb_s = check_port(pgpb)
 
-    server = DBWServer('0.0.0.0', 5559)
+    server = DBWServer('0.0.0.0', port)
     server.close()
 
     while True:
@@ -102,8 +102,8 @@ def main(period, pgpa, pgpb, force_open_port):
                         the PGP ports.""".format(socket.gethostname())
                         send_mail(subject="PGPWATCH - Repmgr - Port Open", body=body_text)
 
-                    if not check_port(pgpa) and not check_port(pgpb) and not check_port():
-                        print("Everybody is down, and we are not up? Bringing the 5559 up.")
+                    if not check_port(pgpa, pgp_port) and not check_port(pgpb, pgp_port) and not check_port(localhost, port):
+                        print("Everybody is down, and we are not up? Bringing the {0} up.".format(port))
                         server.start()
                         body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
                         so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
@@ -136,6 +136,7 @@ def main(period, pgpa, pgpb, force_open_port):
             body_text="""This is the {0}.<br>I failed getting the masters of the cluster.
             If you are not testing something, this isn't good.
             Please check the cluster.""".format(socket.gethostname())
+            send_mail(subject='PGPWATCH - Repmgr - Error', body=body_text)
 
         time.sleep(period)
 
@@ -179,14 +180,31 @@ if __name__ == '__main__':
         print("Error: {0}".format(str(err)))
         raise SystemError
 
+    # Reading the Force Open Port Status
     try:
         force_open_port = config.getboolean('repmgr', 'force_open_port')
     except Exception as err:
         print("Error while reading force_open_port, setting it to false: {0}".format(str(err)))
         force_open_port = False
 
+    # Reading the Port Value
+    try:
+        port = config.getint('repmgr', 'port')
+    except Exception as err:
+        print("Error while reading the port value, setting it to default: 5559")
+        print("Error message: {0}".format(str(err)))
+        port = 5559
+
+    # Reading the PGP Check Port Value
+    try:
+        pgp_port = config.getint('repmgr', 'pgp_port')
+    except Exception as err:
+        print("Error while getting the pgp check port value (pgp_port), setting it to default: 5559")
+        print("Error message: {0}".format(str(err)))
+        pgp_port = 5559
+
     if not pgp_server_1 or not pgp_server_2:
         print("Error: No PGP Servers Specified in the config file. Need two of those.")
         raise SystemError
 
-    main(check_period, pgp_server_1, pgp_server_2, force_open_port)
+    main(check_period, pgp_server_1, pgp_server_2, force_open_port, port, pgp_port)
