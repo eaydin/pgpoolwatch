@@ -8,6 +8,7 @@ import SocketServer
 import socket
 import io
 
+
 def check_port(address='localhost', port=5559):
     s = socket.socket()
     try:
@@ -19,6 +20,7 @@ def check_port(address='localhost', port=5559):
         print "Socket is closed?: %s" % str(err)
         del s
         return False
+
 
 class DBWRequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
@@ -68,14 +70,14 @@ def get_masters():
                         nodes['slaves'].append(row.split('|')[1].strip())
         return True, nodes['masters']
     except Exception as err:
-        print("An Error occurred while getting repmgr cluster show ")
+        print("An Error occurred while getting repmgr cluster show: {0}".format(str(err)))
         return False, []
 
 
 def main(period, pgpa, pgpb, force_open_port, port, pgp_port):
 
-    pgpa_s = check_port(pgpa)
-    pgpb_s = check_port(pgpb)
+    pgpa_s = check_port(pgpa, pgp_port)
+    pgpb_s = check_port(pgpb, pgp_port)
 
     server = DBWServer('0.0.0.0', port)
     server.close()
@@ -87,22 +89,22 @@ def main(period, pgpa, pgpb, force_open_port, port, pgp_port):
                 print("Multiple Masters!")
                 send_mail(subject='PGPWATCH - Repmgr - Multiple Masters',
                           body='This is the {0}.<br>There are multiple masters in the cluster.<br>This situation should be fixed!'.format(socket.gethostname()))
-                if check_port():
+                if check_port('localhost', port):
                     server.close()
                     print("Server Closed")
             else:
                 if masters[0] == socket.gethostname():
                     print("I AM THE MASTER!")
 
-                    if force_open_port and not check_port():
+                    if force_open_port and not check_port('localhost', port):
                         print("Force open port status is set to True. Opening port")
                         server.start()
                         body_text = """This is the {0}.<br> I am the current master, and the force_open_port is set
-                        to true. That's why I'm opening port, without caring about
-                        the PGP ports.""".format(socket.gethostname())
+                        to true. That's why I'm opening port {1}, without caring about
+                        the PGP ports.""".format(socket.gethostname(), port)
                         send_mail(subject="PGPWATCH - Repmgr - Port Open", body=body_text)
 
-                    if not check_port(pgpa, pgp_port) and not check_port(pgpb, pgp_port) and not check_port(localhost, port):
+                    if not check_port(pgpa, pgp_port) and not check_port(pgpb, pgp_port) and not check_port('localhost', port):
                         print("Everybody is down, and we are not up? Bringing the {0} up.".format(port))
                         server.start()
                         body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
@@ -111,7 +113,7 @@ def main(period, pgpa, pgpb, force_open_port, port, pgp_port):
                         is really routing traffic through me.""".format(socket.gethostname())
                         send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
 
-                    elif check_port() and (check_port(pgpa) or check_port(pgpb)):
+                    elif check_port('localhost', port) and (check_port(pgpa, pgp_port) or check_port(pgpb, pgp_port)):
                         print("One of the pgpools is up, so we are bringing ourself down.")
                         server.close()
                         body_text="""This is the {0}.<br>I am the current master, and I used to serve as the DB
@@ -123,7 +125,7 @@ def main(period, pgpa, pgpb, force_open_port, port, pgp_port):
 
                 else:
                     print("I am a slave :(")
-                    if check_port():
+                    if check_port('localhost', port):
                         print("I am serving yet I am a slave, this is wrong.")
                         server.close()
                         body_text="""This is the {0}.<br>I am a slave, yet somehow I was serving on port,
