@@ -104,23 +104,25 @@ def main(period, pgpa, pgpb, force_open_port, port, pgp_port):
                         the PGP ports.""".format(socket.gethostname(), port)
                         send_mail(subject="PGPWATCH - Repmgr - Port Open", body=body_text)
 
-                    if not check_port(pgpa, pgp_port) and not check_port(pgpb, pgp_port) and not check_port('localhost', port):
-                        print("Everybody is down, and we are not up? Bringing the {0} up.".format(port))
-                        server.start()
-                        body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
-                        so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
-                        as possible.<br>Also double check that the GSLB
-                        is really routing traffic through me.""".format(socket.gethostname())
-                        send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
+                    elif not force_open_port:
 
-                    elif check_port('localhost', port) and (check_port(pgpa, pgp_port) or check_port(pgpb, pgp_port)):
-                        print("One of the pgpools is up, so we are bringing ourself down.")
-                        server.close()
-                        body_text="""This is the {0}.<br>I am the current master, and I used to serve as the DB
-                        instance. Yet one of the pgpools are back online. That's why I am closing port so that the GSLB
-                        won't route traffic through me. It is still best that
-                        you check on the system manually""".format(socket.gethostname())
-                        send_mail(subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
+                        if not check_port(pgpa, pgp_port) and not check_port(pgpb, pgp_port) and not check_port('localhost', port):
+                            print("Everybody is down, and we are not up? Bringing the {0} up.".format(port))
+                            server.start()
+                            body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
+                            so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
+                            as possible.<br>Also double check that the GSLB
+                            is really routing traffic through me.""".format(socket.gethostname())
+                            send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
+
+                        elif check_port('localhost', port) and (check_port(pgpa, pgp_port) or check_port(pgpb, pgp_port)):
+                            print("One of the pgpools is up, so we are bringing ourself down.")
+                            server.close()
+                            body_text="""This is the {0}.<br>I am the current master, and I used to serve as the DB
+                            instance. Yet one of the pgpools are back online. That's why I am closing port so that the GSLB
+                            won't route traffic through me. It is still best that
+                            you check on the system manually""".format(socket.gethostname())
+                            send_mail(subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
 
 
                 else:
