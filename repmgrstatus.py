@@ -124,9 +124,11 @@ def main(period, pgpa, pgpb):
                         send_mail(subject='PGPWATCH - Repmgr - Slave Stepping Down (This is good)', body=body_text)
         else:
             print("Something went wrong getting the masters")
+            server.close()
             body_text="""This is the {0}.<br>I failed getting the masters of the cluster.
             If you are not testing something, this isn't good.
             Please check the cluster.""".format(socket.gethostname())
+            send_mail(subject="PGPWATCH - Repmgr - Couldn't Get Masters", body=body_text)
 
         time.sleep(period)
 
