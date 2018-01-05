@@ -210,7 +210,7 @@ class PoolNodes(object):
             output = output.split('\n')[1]
             output = output.split()[4]
         except Exception as err:
-            print("Error: {0}".format(str(err)))
+            print("Error while getting disk usage: {0}".format(str(err)))
             output = '?'
         return output
 
