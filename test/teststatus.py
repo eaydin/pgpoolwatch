@@ -56,7 +56,7 @@ def send_mail(path='/root/vt/sendmail.py', arguments='@/root/vt/args.txt', subje
 def runpgpwatch(success=False):
 
     try:
-        output = subprocess.check_output(["/usr/sbin/runuser", "-l", "postgres", "-c", "'/var/lib/pgsql/pgpoolwatch/pgpwatch.py'"])
+        output = subprocess.check_output(["/usr/sbin/runuser", "-l", "postgres", "-c", "'/var/lib/pgsql/pgpoolwatch/poolstatus.py'"])
 
         if success:
             p = subprocess.Popen(["/usr/bin/python", "/root/vt/sendmail.py", "@/root/vt/args.txt",
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     description="""Checks PGPOOL Status via pgpwatch script, by Veriteknik - tech@veritech.net"""
 
-    parser = argparse.ArgumentParser(prog='poolstatus.py', formatter_class=argparse.RawDescriptionHelpFormatter,
+    parser = argparse.ArgumentParser(prog='pgpwatch.py', formatter_class=argparse.RawDescriptionHelpFormatter,
                                     fromfile_prefix_chars="@", description=description)
 
     parser.add_argument("--mail-on-success", help="Mails even on success.", action='store_true', default=False)
