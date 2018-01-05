@@ -121,6 +121,14 @@ if __name__ == '__main__':
         mail_on_success = args.mail_on_success
     print("Mail on Success:", mail_on_success)
 
+    # Read General Settings
+    sendmail_status = config.getboolean('general', 'sendmail')
+    sendmail_path = config.get('general', 'sendmail_path')
+    sendmail_settings_path = config.get('general', 'sendmail_settings_path')
+    poolstatus_path = config.get('general', 'poolstatus_path')
+    poolstatus_user = config.get('general', 'poolstatus_user')
+
+
     if not args.run_once:
 
         # run the port things
