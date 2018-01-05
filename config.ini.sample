@@ -2,7 +2,6 @@
 check_period=10
 success_period=5
 mail_on_success=yes
-check_port = 5559
 open_port = 5559
 
 [repmgr]
