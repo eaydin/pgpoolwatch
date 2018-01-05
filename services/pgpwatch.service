@@ -5,8 +5,8 @@ Documentation=http://rtfm.veritech.net
 
 [Service]
 Type=simple
-ExecStart=/root/pgpool/pgpwatch.py
-PIDFile=/var/run/pgpwatch/pgpwatch.pid
+ExecStart=/root/pgpoolwatch/pgpwatch.py
+PIDFile=/var/run/pgpoolwatch/pgpwatch.pid
 User=root
 Group=root
 
