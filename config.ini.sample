@@ -13,7 +13,7 @@ open_port = 5559
 
 [general]
 sendmail=yes
-sendmail_path=/root/pgpoolwatch
-sendmail_settings_path=/root/pgpoolwatch
+sendmail_path=/root/pgpoolwatch/sendmail.py
+sendmail_settings_path=/root/pgpoolwatch/args.txt
 poolstatus_path=/root/pgpoolwatch/poolstatus.py
 poolstatus_user=postgres
