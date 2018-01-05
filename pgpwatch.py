@@ -134,6 +134,9 @@ if __name__ == '__main__':
     poolstatus_path = config.get('general', 'poolstatus_path')
     poolstatus_user = config.get('general', 'poolstatus_user')
 
+    open_port = 5559
+    # Read Port Settings
+    open_port = config.getint('pgp', 'open_port')
 
     if not args.run_once:
 
@@ -142,8 +145,8 @@ if __name__ == '__main__':
                                    sendmail_status=sendmail_status, sendmail_path=sendmail_path,
                                    sendmail_settings_path=sendmail_settings_path)
         if pgp_status:
-            server = PGPWServer('0.0.0.0', 5559)
-        server_status = check_port()
+            server = PGPWServer('0.0.0.0', open_port)
+        server_status = check_port(port=open_port)
 
         m = 0 # the first instance
         n = 0 # the usual counter
@@ -160,7 +163,7 @@ if __name__ == '__main__':
                                    sendmail_status=sendmail_status, sendmail_path=sendmail_path,
                                    sendmail_settings_path=sendmail_settings_path)
 
-            server_status = check_port()
+            server_status = check_port(port=open_port)
 
             if not xor(pgp_status, server_status):
                 # this means the state hasn't changed
@@ -181,26 +184,26 @@ if __name__ == '__main__':
                     # pgp is running, probably it just revived
                     if not server_status:
                         # let's check if the port is really closed
-                        if not check_port():
+                        if not check_port(port=open_port):
                             # let's open it up
                             try:
                                 server.start()
                             except Exception as err:
                                 print("Error while server.start: {0}".format(str(err)))
                                 print("Recreating the server instance")
-                                server = PGPWServer('0.0.0.0', 5559)
-                            if check_port():
-                                print("5559 Startup success")
+                                server = PGPWServer('0.0.0.0', open_port)
+                            if check_port(port=open_port):
+                                print("Port {0} Startup success".format(open_port))
                                 send_mail(path=sendmail_path, arguments=sendmail_settings_path,
                                           subject="PGPWATCH - Status Change - PGP Up",
                                           body="This is the {0}.<br>The PGPServer was down, now switching to <b>up</b> state. <br>Opening port for GSLB.".format(socket.gethostname()))
                                 server_status = True
                             else:
-                                print("5559 Startup failed?")
+                                print("Port {0} Startup failed?".format(open_port))
                         else:
                             # the port is already open
                             # yet the server_status thinks it is closed
-                            print("Port is open but server_status is False, this is weird")
+                            print("Port {0} is open but server_status is False, this is weird".format(open_port))
                             server_status = True
 
                     else:
@@ -213,21 +216,21 @@ if __name__ == '__main__':
                     # pgp is not running, probably just died
                     if server_status:
                         # let's check if the port is really open
-                        if check_port():
+                        if check_port(port=open_port):
                             # let's close it up
                             try:
                                 server.close()
                             except Exception as err:
                                 print("Error while server.stop: {0}".format(str(err)))
                                 pass
-                            if not check_port():
-                                print("5559 Closeup success")
+                            if not check_port(port=open_port):
+                                print("Port {0} Closeup success".format(open_port))
                                 send_mail(path=sendmail_path, arguments=sendmail_settings_path,
                                           subject="PGPWATCH - Status Change - PGP Down",
-                                          body="This is the {0}.<br>The PGPServer was up, now it <b>failed</b>. <br>Closing port for GSLB.".format(socket.gethostname()))
+                                          body="This is the {0}.<br>The PGPServer was up, now it <b>failed</b>. <br>Closing port {1} for GSLB.".format(socket.gethostname(), open_port))
                                 server_status = False
                             else:
-                                print("5559 Closeup failed?")
+                                print("Port {0} Closeup failed?".format(open_port))
                         else:
                             # the port is already closed
                             # yet the server_status thinks it is open
