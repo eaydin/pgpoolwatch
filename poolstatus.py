@@ -189,8 +189,8 @@ class PoolNodes(object):
                                           "-c", "select pg_current_xlog_location()"])
                 output = output.split('\n')
                 self.xlog_location = self._strip_element(output[2],0)
-        except:
-            print("An error has occurred while getting XLOG Location")
+        except Exception as err:
+            print("An error has occurred while getting XLOG Location: {0}".format(str(err)))
 
     def _run_xlog_slave_location(self):
         try:
@@ -201,8 +201,8 @@ class PoolNodes(object):
                                           "-c", "select pg_last_xlog_receive_location()"])
                 output = output.split('\n')
                 self.xlog_slave_location = self._strip_element(output[2],0)
-        except:
-            print("An error has occurred while getting XLOG Receive Location")
+        except Exception as err:
+            print("An error has occurred while getting XLOG Receive Location: {0}".format(str(err)))
 
     def _get_disk_usage(self, host):
         try:
@@ -225,7 +225,12 @@ class PoolNodes(object):
                 self.master = self.node1['hostname']
             elif self.node2['role'] == 'primary':
                 self.master = self.node2['hostname']
+            elif self.node1['role'] == 'master':
+                self.master = self.node1['hostname']
+            elif self.node2['role'] == 'master':
+                self.master = self.node2['hostname']
             else:
+                print("WARNING: No Master Detected?")
                 self.master = ''
 
     def _find_slave(self):
@@ -236,7 +241,12 @@ class PoolNodes(object):
                 self.slave = self.node1['hostname']
             elif self.node2['role'] == 'standby':
                 self.slave = self.node2['hostname']
+            elif self.node1['role'] == 'slave':
+                self.slave = self.node1['hostname']
+            elif self.node2['role'] == 'slave':
+                self.slave = self.node2['hostname']
             else:
+                print("WARNING: No Slave Detected?")
                 self.slave = ''
 
     def _wal_process(self):
