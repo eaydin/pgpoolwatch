@@ -10,7 +10,7 @@ pg_server_2=192.168.255.90
 
 [general]
 sendmail=yes
-sendmailpath=/root/pgpoolwatch
-sendmailsettingspath=/root/pgpoolwatch
-poolstatuspath=/root/pgpoolwatch/poolstatus.py
-poolstatususer=postgres
+sendmail_path=/root/pgpoolwatch
+sendmail_settings_path=/root/pgpoolwatch
+poolstatus_path=/root/pgpoolwatch/poolstatus.py
+poolstatus_user=postgres
