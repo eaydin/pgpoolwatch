@@ -12,3 +12,5 @@ pg_server_2=192.168.255.90
 sendmail=yes
 sendmailpath=/root/pgpoolwatch
 sendmailsettingspath=/root/pgpoolwatch
+poolstatuspath=/root/pgpoolwatch/poolstatus.py
+poolstatususer=postgres
