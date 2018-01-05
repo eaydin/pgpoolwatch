@@ -166,7 +166,7 @@ class PoolNodes(object):
     def _run_repl_events(self):
         try:
             if self.master == '':
-                self.master = self._find_master()
+                self._find_master()
             if self.master != '':
                 output_all = sp.check_output(["psql", "-h", self.master, "-U", "repmgr", "-d", "repmgr",
                                           "-c", "select * from repl_events"])
@@ -183,7 +183,7 @@ class PoolNodes(object):
     def _run_xlog_location(self):
         try:
             if self.master == '':
-                self.master = self._find_master()
+                self._find_master()
             if self.master != '':
                 output = sp.check_output(["psql", "-h", self.master, "-U", "repmgr", "-d", "repmgr",
                                           "-c", "select pg_current_xlog_location()"])
@@ -272,7 +272,7 @@ class PoolNodes(object):
     def _run_cluster_show(self):
         try:
             if self.master == '':
-                self.master = self._find_master()
+                self._find_master()
             if self.master != '':
                 output = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.master, "/usr/pgsql-9.6/bin/repmgr cluster show"])
                 if len(output) > 0:
