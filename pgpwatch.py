@@ -93,7 +93,7 @@ if __name__ == '__main__':
     if args.config:
         config_file_path = args.config
     else:
-        config_file_path = "/root/vt/config.ini"
+        config_file_path = "/root/pgpoolwatch/config.ini"
 
     # Load the configuration file
     with open(config_file_path) as f:
