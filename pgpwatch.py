@@ -47,21 +47,25 @@ class PGPWServer(SocketServer.TCPServer):
         return SocketServer.TCPServer.server_close(self)
 
 
-def send_mail(path='/root/vt/sendmail.py', arguments='@/root/vt/args.txt', subject="PGPWATCH", failed_node='none', new_master='none', body=None):
-    p = subprocess.Popen(["/usr/bin/python", path, arguments, "--subject={0}".format(subject), "--failed-node={0}".format(failed_node),
+def send_mail(path='/root/pgpoolwatch/sendmail.py', arguments='/root/pgpoolwatch/args.txt', subject="PGPWATCH", failed_node='none', new_master='none', body=None):
+    p = subprocess.Popen(["/usr/bin/python", path, "@{0}".format(arguments), "--subject={0}".format(subject), "--failed-node={0}".format(failed_node),
                           "--new-master={0}".format(new_master), "--body={0}".format(body)])
     p.communicate()[0]
 
 
-def runpgpwatch(success=False):
+def runpoolstatus(success=False, poolstatus_path='/root/pgpoolwatch/poolstatus.py', poolstatus_user='postgres',
+                  sendmail_status=False, sendmail_path='/root/pgpoolwatch/sendmail.py',
+                  sendmail_settings_path='/root/pgpoolwatch/args.txt'):
 
     try:
-        output = subprocess.check_output(["/usr/sbin/runuser", "-l", "postgres", "-c", "'/var/lib/pgsql/pgpoolwatch/poolstatus.py'"])
+        output = subprocess.check_output(["/usr/sbin/runuser", "-l", poolstatus_user, "-c", "'{0}'".format(poolstatus_path)])
 
         if success:
-            p = subprocess.Popen(["/usr/bin/python", "/root/vt/sendmail.py", "@/root/vt/args.txt",
-                              "--subject=PGPWATCH - Status OK", "--failed-node=none", "--new-master=none", "--body=This is the {0}. The pgpwatch script returned fine.<br><br>{1}".format(socket.gethostname(), output.replace("\n", "<br>"))], stdout=subprocess.PIPE)
-            p.communicate()[0]
+            if sendmail_status:
+                p = subprocess.Popen(["/usr/bin/python", sendmail_path, "@{0}".format(sendmail_settings_path),
+                        "--subject=PGPWATCH - Status OK", "--failed-node=none", "--new-master=none",
+                        "--body=This is the {0}. The pgpwatch script returned fine.<br><br>{1}".format(socket.gethostname(),output.replace("\n", "<br>"))], stdout=subprocess.PIPE)
+                p.communicate()[0]
         return True
 
     except subprocess.CalledProcessError as outputexc:
@@ -69,9 +73,11 @@ def runpgpwatch(success=False):
         output_text = outputexc.output
         print("Output: {0}".format(output_text))
 
-        p = subprocess.Popen(["/usr/bin/python", "/root/vt/sendmail.py", "@/root/vt/args.txt",
-                              "--subject=PGPWATCH - Error", "--failed-node=none", "--new-master=none", "--body=This is the {0}.<br>The pgpwatch script <b>failed!</b><br><br>{1}".format(socket.gethostname(), output_text.replace("\n", "<br>"))], stdout=subprocess.PIPE)
-        p.communicate()[0]
+        if sendmail_status:
+            p = subprocess.Popen(["/usr/bin/python", sendmail_path, "@{0}".format(sendmail_settings_path),
+                                  "--subject=PGPWATCH - Error", "--failed-node=none", "--new-master=none",
+                                  "--body=This is the {0}.<br>The pgpwatch script <b>failed!</b><br><br>{1}".format(socket.gethostname(), output_text.replace("\n", "<br>"))], stdout=subprocess.PIPE)
+            p.communicate()[0]
 
         return False
 
@@ -85,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument("--mail-on-success", help="Mails even on success.", action='store_true', default=False)
     parser.add_argument("--run-once", help="Run the script once and exit", action="store_true", default=False)
     parser.add_argument("--check-period", help="Check status every x seconds")
-    parser.add_argument("--success-period", help="Send successfull checks every x checks (not seconds!)")
+    parser.add_argument("--success-period", help="Send successful checks every x checks (not seconds!)")
     parser.add_argument("--config", help="Path to the config file")
 
     args = parser.parse_args()
@@ -132,7 +138,9 @@ if __name__ == '__main__':
     if not args.run_once:
 
         # run the port things
-        pgp_status = runpgpwatch(False)
+        pgp_status = runpoolstatus(False, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                                   sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                                   sendmail_settings_path=sendmail_settings_path)
         if pgp_status:
             server = PGPWServer('0.0.0.0', 5559)
         server_status = check_port()
@@ -142,11 +150,15 @@ if __name__ == '__main__':
         while True:
             if n == success_period or m == 0:
                 if mail_on_success:
-                    pgp_status = runpgpwatch(True)
+                    pgp_status = runpoolstatus(True, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                                   sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                                   sendmail_settings_path=sendmail_settings_path)
                 n = 0
                 m = 1
             else:
-                pgp_status = runpgpwatch(False)
+                pgp_status = runpoolstatus(False, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                                   sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                                   sendmail_settings_path=sendmail_settings_path)
 
             server_status = check_port()
 
@@ -179,7 +191,8 @@ if __name__ == '__main__':
                                 server = PGPWServer('0.0.0.0', 5559)
                             if check_port():
                                 print("5559 Startup success")
-                                send_mail(subject="PGPWATCH - Status Change - PGP Up",
+                                send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                          subject="PGPWATCH - Status Change - PGP Up",
                                           body="This is the {0}.<br>The PGPServer was down, now switching to <b>up</b> state. <br>Opening port for GSLB.".format(socket.gethostname()))
                                 server_status = True
                             else:
@@ -209,7 +222,8 @@ if __name__ == '__main__':
                                 pass
                             if not check_port():
                                 print("5559 Closeup success")
-                                send_mail(subject="PGPWATCH - Status Change - PGP Down",
+                                send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                          subject="PGPWATCH - Status Change - PGP Down",
                                           body="This is the {0}.<br>The PGPServer was up, now it <b>failed</b>. <br>Closing port for GSLB.".format(socket.gethostname()))
                                 server_status = False
                             else:
@@ -228,7 +242,6 @@ if __name__ == '__main__':
             n += 1
             time.sleep(check_period)
     else:
-        if mail_on_success:
-            runpgpwatch(True)
-        else:
-            runpgpwatch(False)
+        runpoolstatus(mail_on_success, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                      sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                      sendmail_settings_path=sendmail_settings_path)
