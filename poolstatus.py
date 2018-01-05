@@ -195,7 +195,7 @@ class PoolNodes(object):
     def _run_xlog_slave_location(self):
         try:
             if self.slave == '':
-                self.slave = self._find_slave()
+                self._find_slave()
             if self.slave != '':
                 output = sp.check_output(["psql", "-h", self.slave, "-U", "repmgr", "-d", "repmgr",
                                           "-c", "select pg_last_xlog_receive_location()"])
