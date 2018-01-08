@@ -1,321 +1,275 @@
 #!/usr/bin/python
+import subprocess
+import argparse
+import time
+import ConfigParser
+import io
+import SocketServer
+import socket
+from operator import xor
 
-import cStringIO, operator
-import subprocess as sp
-from datetime import datetime
-
-# The indent function is used to pretty print tables
-# Source of the function: http://code.activestate.com/recipes/267662-table-indentation/
-
-def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
-           separateRows=False, prefix='', postfix='', wrapfunc=lambda x:x):
-    """Indents a table by column.
-       - rows: A sequence of sequences of items, one sequence per row.
-       - hasHeader: True if the first row consists of the columns' names.
-       - headerChar: Character to be used for the row separator line
-         (if hasHeader==True or separateRows==True).
-       - delim: The column delimiter.
-       - justify: Determines how are data justified in their column.
-         Valid values are 'left','right' and 'center'.
-       - separateRows: True if rows are to be separated by a line
-         of 'headerChar's.
-       - prefix: A string prepended to each printed row.
-       - postfix: A string appended to each printed row.
-       - wrapfunc: A function f(text) for wrapping text; each element in
-         the table is first wrapped by this function."""
-    # closure for breaking logical rows to physical, using wrapfunc
-    def rowWrapper(row):
-        newRows = [wrapfunc(item).split('\n') for item in row]
-        return [[substr or '' for substr in item] for item in map(None,*newRows)]
-    # break each logical row into one or more physical ones
-    logicalRows = [rowWrapper(row) for row in rows]
-    # columns of physical rows
-    columns = map(None,*reduce(operator.add,logicalRows))
-    # get the maximum of each column by the string length of its items
-    maxWidths = [max([len(str(item)) for item in column]) for column in columns]
-    rowSeparator = headerChar * (len(prefix) + len(postfix) + sum(maxWidths) + \
-                                 len(delim)*(len(maxWidths)-1))
-    # select the appropriate justify method
-    justify = {'center':str.center, 'right':str.rjust, 'left':str.ljust}[justify.lower()]
-    output=cStringIO.StringIO()
-    if separateRows: print >> output, rowSeparator
-    for physicalRows in logicalRows:
-        for row in physicalRows:
-            print >> output, \
-                prefix \
-                + delim.join([justify(str(item),width) for (item,width) in zip(row,maxWidths)]) \
-                + postfix
-        if separateRows or hasHeader: print >> output, rowSeparator; hasHeader=False
-    return output.getvalue()
+def check_port(address='localhost', port=5559):
+    s = socket.socket()
+    try:
+        s.connect((address, port))
+        print("Socket is open")
+        del s
+        return True
+    except socket.error as err:
+        print("Socket is closed?: %s" % str(err))
+        del s
+        return False
 
 
-class PoolNodes(object):
-    def __init__(self):
-        self.node1 = {}
-        self.node2 = {}
-        self.stat_replication = {}
-        self.master = ''
-        self.slave = ''
-        self.xlog_location = ''
-        self.xlog_slave_location = ''
-        self.pool_nodes = ''
-        self.row_num_all = ''
-        self.row_num_24 = ''
-        self.master_status = 0
-        self.master_stream = ''
-        self.slave_status = 0
-        self.slave_stream = ''
-        self.master_disk = ''
-        self.slave_disk = ''
-        self.cluster_show = ''
-        self.pg_stat_replication = ''
+class PGPWRequestHandler(SocketServer.BaseRequestHandler):
+    def handle(self):
+        pass
 
-        self._run_pool_nodes()
-        self._find_master()
-        self._find_slave()
-        self._run_cluster_show()
-        self._run_stat_replication()
+class PGPWServer(SocketServer.TCPServer):
+    def __init__(self, host='0.0.0.0', port=5559, handler_class=PGPWRequestHandler):
+        self.host = host
+        self.port = port
+        self.handler_class = handler_class
+        self.start()
 
-        self._run_repl_events()
-        self._run_xlog_location()
-        self._run_xlog_slave_location()
-        self._wal_process()
-        self.master_disk = self._get_disk_usage(self.master)
-        self.slave_disk = self._get_disk_usage(self.slave)
-        self._pretty_print()
+    def start(self):
+        print "Initiating server..."
+        SocketServer.TCPServer.__init__(self, (self.host, self.port), self.handler_class)
+        return
 
-    def _run_pool_nodes(self):
-        try:
-            output_original = sp.check_output(["psql", "-h", "localhost", "-U", "pgpool", "-d", "postgres", "-c", "show pool_nodes"])
+    def activate(self):
+        print "Activating server..."
+        SocketServer.TCPServer.server_activate(self)
+        return
 
-            output = output_original.split('\n')
-
-            self.node1['node_id'] = self._strip_element(output[2], 0)
-            self.node1['hostname'] = self._strip_element(output[2], 1)
-            self.node1['port'] = self._strip_element(output[2], 2)
-            self.node1['status'] = self._strip_element(output[2], 3)
-            self.node1['lb_weight'] = self._strip_element(output[2], 4)
-            self.node1['role'] = self._strip_element(output[2], 5)
-            self.node1['select_cnt'] = self._strip_element(output[2], 6)
-            self.node1['load_balance_node'] = self._strip_element(output[2], 7)
-            self.node1['replication_delay'] = self._strip_element(output[2], 8)
+    def close(self):
+        print "Closing server..."
+        return SocketServer.TCPServer.server_close(self)
 
 
-            self.node2['node_id'] = self._strip_element(output[3], 0)
-            self.node2['hostname'] = self._strip_element(output[3], 1)
-            self.node2['port'] = self._strip_element(output[3], 2)
-            self.node2['status'] = self._strip_element(output[3], 3)
-            self.node2['lb_weight'] = self._strip_element(output[3], 4)
-            self.node2['role'] = self._strip_element(output[3], 5)
-            self.node2['select_cnt'] = self._strip_element(output[3], 6)
-            self.node2['load_balance_node'] = self._strip_element(output[3], 7)
-            self.node2['replication_delay'] = self._strip_element(output[3], 8)
-
-            self.pool_nodes = output_original
-        except:
-            self.pool_nodes = "An Error has occurred!"
-
-    def _run_stat_replication(self):
-        try:
-            if self.master == '':
-                self._find_master()
-            if self.master != '':
-                output = sp.check_output(["psql", "-h", self.master, "-U", "repmgr", "-d", "repmgr",
-                                          "-c", "select * from pg_stat_replication"])
-
-                output = output.split('\n')
-
-                self.stat_replication['pid'] = self._strip_element(output[2], 0)
-                self.stat_replication['usesysid'] = self._strip_element(output[2], 1)
-                self.stat_replication['usename'] = self._strip_element(output[2], 2)
-                self.stat_replication['application_name'] = self._strip_element(output[2], 3)
-                self.stat_replication['client_addr'] = self._strip_element(output[2], 4)
-                self.stat_replication['client_hostname'] = self._strip_element(output[2], 5)
-                self.stat_replication['client_port'] = self._strip_element(output[2], 6)
-                self.stat_replication['backend_start'] = self._strip_element(output[2], 7)
-                self.stat_replication['backend_xmin'] = self._strip_element(output[2], 8)
-                self.stat_replication['state'] = self._strip_element(output[2], 1)
-                self.stat_replication['sent_location'] = self._strip_element(output[2], 1)
-                self.stat_replication['write_location'] = self._strip_element(output[2], 1)
-                self.stat_replication['flush_location'] = self._strip_element(output[2], 1)
-                self.stat_replication['replay_location'] = self._strip_element(output[2], 1)
-                self.stat_replication['sync_priority'] = self._strip_element(output[2], 1)
-                self.stat_replication['sync_state'] = self._strip_element(output[2], 1)
-
-                labels = ('Parameter', 'Value')
-                data = [["pid",self.stat_replication['pid']], ['usesysid', self.stat_replication['usesysid']],
-                        ["usename", self.stat_replication['usename']], ["application_name", self.stat_replication['application_name']],
-                        ["client_addr", self.stat_replication['client_addr']],
-                        ["client_hostname", self.stat_replication['client_hostname']],
-                        ['client_port', self.stat_replication['client_port']],
-                        ['backend_start', self.stat_replication['backend_start']],
-                        ['backend_xmin', self.stat_replication['backend_xmin']],
-                        ['state', self.stat_replication['state']],
-                        ['sent_location', self.stat_replication['sent_location']],
-                        ['write_location', self.stat_replication['write_location']],
-                        ['flush_location', self.stat_replication['flush_location']],
-                        ['replay_location', self.stat_replication['replay_location']],
-                        ['sync_priority', self.stat_replication['sync_priority']],
-                        ['sync_state', self.stat_replication['sync_state']]
-                        ]
-
-                self.pg_stat_replication = indent([labels]+data, hasHeader=True, prefix='- ')
-        except:
-            self.pg_stat_replication = "An error occurred while getting stat_replication"
-
-    def _run_repl_events(self):
-        try:
-            if self.master == '':
-                self.master = self._find_master()
-            if self.master != '':
-                output_all = sp.check_output(["psql", "-h", self.master, "-U", "repmgr", "-d", "repmgr",
-                                          "-c", "select * from repl_events"])
-                output_24 = sp.check_output(["psql", "-h", self.master, "-U", "repmgr", "-d", "repmgr",
-                                          "-c", "select * from repl_events where event_timestamp > now() - interval '24 hours'"])
+def send_mail(path='/root/pgpoolwatch/sendmail.py', arguments='/root/pgpoolwatch/args.txt', subject="PGPWATCH", failed_node='none', new_master='none', body=None):
+    p = subprocess.Popen(["/usr/bin/python", path, "@{0}".format(arguments), "--subject={0}".format(subject), "--failed-node={0}".format(failed_node),
+                          "--new-master={0}".format(new_master), "--body={0}".format(body)])
+    p.communicate()[0]
 
 
-                self.row_num_all = str(output_all.split('\n')[-3].strip().split()[0][1:])
-                self.row_num_24 = str(output_24.split('\n')[-3].strip().split()[0][1:])
-        except:
-            self.row_num_24 = "?"
-            self.row_num_all = "?"
+def runpoolstatus(success=False, poolstatus_path='/root/pgpoolwatch/poolstatus.py', poolstatus_user='postgres',
+                  sendmail_status=False, sendmail_path='/root/pgpoolwatch/sendmail.py',
+                  sendmail_settings_path='/root/pgpoolwatch/args.txt'):
 
-    def _run_xlog_location(self):
-        try:
-            if self.master == '':
-                self.master = self._find_master()
-            if self.master != '':
-                output = sp.check_output(["psql", "-h", self.master, "-U", "repmgr", "-d", "repmgr",
-                                          "-c", "select pg_current_xlog_location()"])
-                output = output.split('\n')
-                self.xlog_location = self._strip_element(output[2],0)
-        except:
-            print("An error has occurred while getting XLOG Location")
+    try:
+        output = subprocess.check_output(["/usr/sbin/runuser", "-l", poolstatus_user, "-c", "'{0}'".format(poolstatus_path)])
 
-    def _run_xlog_slave_location(self):
-        try:
-            if self.slave == '':
-                self.slave = self._find_slave()
-            if self.slave != '':
-                output = sp.check_output(["psql", "-h", self.slave, "-U", "repmgr", "-d", "repmgr",
-                                          "-c", "select pg_last_xlog_receive_location()"])
-                output = output.split('\n')
-                self.xlog_slave_location = self._strip_element(output[2],0)
-        except:
-            print("An error has occurred while getting XLOG Receive Location")
+        if success:
+            if sendmail_status:
+                p = subprocess.Popen(["/usr/bin/python", sendmail_path, "@{0}".format(sendmail_settings_path),
+                        "--subject=PGPWATCH - Status OK", "--failed-node=none", "--new-master=none",
+                        "--body=This is the {0}. The pgpwatch script returned fine.<br><br>{1}".format(socket.gethostname(),output.replace("\n", "<br>"))], stdout=subprocess.PIPE)
+                p.communicate()[0]
+        return True
 
-    def _get_disk_usage(self, host):
-        try:
-            output = sp.check_output(["ssh", "-o", "ConnectTimeout=5", host, "df / -h"])
-            output = output.split('\n')[1]
-            output = output.split()[4]
-        except Exception as err:
-            print("Error: {0}".format(str(err)))
-            output = '?'
-        return output
+    except subprocess.CalledProcessError as outputexc:
+        print("Error Code: {0}".format(outputexc.returncode))
+        output_text = outputexc.output
+        print("Output: {0}".format(output_text))
 
-    def _strip_element(self, input, num):
-        return input.split('|')[num].strip()
+        if sendmail_status:
+            p = subprocess.Popen(["/usr/bin/python", sendmail_path, "@{0}".format(sendmail_settings_path),
+                                  "--subject=PGPWATCH - Error", "--failed-node=none", "--new-master=none",
+                                  "--body=This is the {0}.<br>The pgpwatch script <b>failed!</b><br><br>{1}".format(socket.gethostname(), output_text.replace("\n", "<br>"))], stdout=subprocess.PIPE)
+            p.communicate()[0]
 
-    def _find_master(self):
-        if len(self.node1) == 0 and len(self.node2) == 0:
-            self._run_pool_nodes()
-        else:
-            if self.node1['role'] == 'primary':
-                self.master = self.node1['hostname']
-            elif self.node2['role'] == 'primary':
-                self.master = self.node2['hostname']
-            else:
-                self.master = ''
-
-    def _find_slave(self):
-        if len(self.node1) == 0 and len(self.node2) == 0:
-            self._run_pool_nodes()
-        else:
-            if self.node1['role'] == 'standby':
-                self.slave = self.node1['hostname']
-            elif self.node2['role'] == 'standby':
-                self.slave = self.node2['hostname']
-            else:
-                self.slave = ''
-
-    def _wal_process(self):
-        if self.master == '':
-            self.master = self._find_master()
-        if self.slave == '':
-            self.slave = self._find_slave()
-
-        self.master_status = 0
-        if self.master != '':
-            try:
-                output_master = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.master, "ps aux | egrep 'wal\ssender'"])
-                output_master = output_master.strip()
-                if len(output_master) != 0:
-                    self.master_stream = output_master.split()[-1]
-                    self.master_status = 1
-            except:
-                self.master_stream = ''
-                self.master_status = 0
-
-        self.slave_status = 0
-        if self.slave != '':
-            try:
-                output_slave = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.slave, "ps aux | egrep 'wal\sreceiver'"])
-                output_slave = output_slave.strip()
-                if len(output_slave) != 0:
-                    self.slave_stream = output_slave.split()[-1]
-                    self.slave_status = 1
-            except:
-                self.slave_stream = ''
-                self.slave_stream = 0
-
-    def _run_cluster_show(self):
-        try:
-            if self.master == '':
-                self.master = self._find_master()
-            if self.master != '':
-                output = sp.check_output(["ssh", "-o", "ConnectTimeout=5", self.master, "/usr/pgsql-9.6/bin/repmgr cluster show"])
-                if len(output) > 0:
-                    self.cluster_show = output
-        except:
-            self.cluster_show = "An Error occurred while getting cluster show."
-
-    def _pretty_print(self):
-
-        print("Output of: show pool_nodes")
-        print(self.pool_nodes)
-
-        print("Output of: repmgr cluster show")
-        print(self.cluster_show)
-
-        print("Output of: pg_stat_replication")
-        print(self.pg_stat_replication)
-
-        if self.master_status:
-            master_s = "UP"
-            master_s2 = self.master_stream
-        else:
-            master_s = "DOWN"
-            master_s2 = ''
-        if self.slave_status:
-            slave_s = "UP"
-            slave_s2 = self.slave_stream
-        else:
-            slave_s = "DOWN"
-            slave_s2 = ''
-        data = [
-                ['Current Datetime', str(datetime.now())],
-                ['xlog_location (master)', self.xlog_location],
-                ['xlog_location (slave)', self.xlog_slave_location],
-                ['WAL Process (master)', master_s2, master_s],
-                ['WAL Process (slave)', slave_s2, slave_s],
-                ['Number of Events (all)', self.row_num_all],
-                ['Number of Events (24h)', self.row_num_24],
-                ['MASTER', self.master, 'Disk', self.master_disk],
-                ['SLAVE', self.slave, 'Disk', self.slave_disk]
-        ]
-        labels = ('Parameter', 'Value')
-        print(indent([labels] + data, hasHeader=True, prefix='- '))
+        return False
 
 if __name__ == '__main__':
-    p = PoolNodes()
+
+    description="""Checks PGPOOL Status via pgpwatch script, by Veriteknik - tech@veritech.net"""
+
+    parser = argparse.ArgumentParser(prog='pgpwatch.py', formatter_class=argparse.RawDescriptionHelpFormatter,
+                                    fromfile_prefix_chars="@", description=description)
+
+    parser.add_argument("--mail-on-success", help="Mails even on success.", action='store_true', default=False)
+    parser.add_argument("--run-once", help="Run the script once and exit", action="store_true", default=False)
+    parser.add_argument("--check-period", help="Check status every x seconds")
+    parser.add_argument("--success-period", help="Send successful checks every x checks (not seconds!)")
+    parser.add_argument("--config", help="Path to the config file")
+
+    args = parser.parse_args()
+
+    if args.config:
+        config_file_path = args.config
+    else:
+        config_file_path = "/root/pgpoolwatch/config.ini"
+
+    # Load the configuration file
+    with open(config_file_path) as f:
+        sample_config = f.read()
+    config = ConfigParser.RawConfigParser(allow_no_value=True)
+    config.readfp(io.BytesIO(sample_config))
+
+    # Get check period
+    # First if argument specified, else read from config
+    if args.check_period:
+        check_period = args.check_period
+    else:
+        check_period = config.getfloat('pgp', 'check_period')
+    print("Check Period:", check_period)
+
+    # Get Success Period
+    if args.success_period:
+        success_period = args.success_period
+    else:
+        success_period = config.getfloat('pgp', 'success_period')
+    print("Success Period:", success_period)
+
+    mail_on_success = config.getboolean('pgp', 'mail_on_success')
+    if args.mail_on_success:
+        mail_on_success = args.mail_on_success
+    print("Mail on Success:", mail_on_success)
+
+    # Initiate default values for general settings
+    sendmail_status = False
+    sendmail_path = '/root/pgpoolwatch/sendmail.py'
+    sendmail_settings_path = '/root/pgpoolwatch/args.txt'
+    poolstatus_path = '/var/lib/pgsql/poolstatus.py'
+    poolstatus_user = 'postgres'
+
+    # Read General Settings
+    try:
+        sendmail_status = config.getboolean('general', 'sendmail')
+    except Exception as err:
+        print("Error reading [general]sendmail_status: {0}".format(str(err)))
+    try:
+        sendmail_path = config.get('general', 'sendmail_path')
+    except Exception as err:
+        print("Error reading [general]sendmail_path: {0}".format(str(err)))
+    try:
+        sendmail_settings_path = config.get('general', 'send_mail_settings_path')
+    except Exception as err:
+        print("Error reading [general]sendmail_settings_path: {0}".format(str(err)))
+    try:
+        poolstatus_path = config.get('general', 'poolstatus_path')
+    except Exception as err:
+        print("Error reading [general]poolstatus_path: {0}".format(str(err)))
+    try:
+        poolstatus_user = config.get('general', 'poolstatus_user')
+    except Exception as err:
+        print("Error reading [general]poolstatus_user: {0}".format(str(err)))
+
+    open_port = 5559
+    # Read Port Settings
+    try:
+        open_port = config.getint('pgp', 'open_port')
+    except Exception as err:
+        print("Error reading [pgp]open_port: {0}".format(str(err)))
+
+    if not args.run_once:
+
+        # run the port things
+        pgp_status = runpoolstatus(False, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                                   sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                                   sendmail_settings_path=sendmail_settings_path)
+        if pgp_status:
+            server = PGPWServer('0.0.0.0', open_port)
+        server_status = check_port(port=open_port)
+
+        m = 0 # the first instance
+        n = 0 # the usual counter
+        while True:
+            if n == success_period or m == 0:
+                if mail_on_success:
+                    pgp_status = runpoolstatus(True, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                                   sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                                   sendmail_settings_path=sendmail_settings_path)
+                n = 0
+                m = 1
+            else:
+                pgp_status = runpoolstatus(False, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                                   sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                                   sendmail_settings_path=sendmail_settings_path)
+
+            server_status = check_port(port=open_port)
+
+            if not xor(pgp_status, server_status):
+                # this means the state hasn't changed
+                # if it was up, it is still up
+                # if it was down, it is still down
+                # so we don't inform any cylons
+                print("No State Change")
+                print("pgp_status", pgp_status)
+                print("server_status", server_status)
+                print("xor", xor(pgp_status, server_status))
+                pass
+            else:
+                # something smells fishy
+                # there has been a state change
+                # let's detect it
+                print("State change detected...")
+                if pgp_status:
+                    # pgp is running, probably it just revived
+                    if not server_status:
+                        # let's check if the port is really closed
+                        if not check_port(port=open_port):
+                            # let's open it up
+                            try:
+                                server.start()
+                            except Exception as err:
+                                print("Error while server.start: {0}".format(str(err)))
+                                print("Recreating the server instance")
+                                server = PGPWServer('0.0.0.0', open_port)
+                            if check_port(port=open_port):
+                                print("Port {0} Startup success".format(open_port))
+                                send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                          subject="PGPWATCH - Status Change - PGP Up",
+                                          body="This is the {0}.<br>The PGPServer was down, now switching to <b>up</b> state. <br>Opening port for GSLB.".format(socket.gethostname()))
+                                server_status = True
+                            else:
+                                print("Port {0} Startup failed?".format(open_port))
+                        else:
+                            # the port is already open
+                            # yet the server_status thinks it is closed
+                            print("Port {0} is open but server_status is False, this is weird".format(open_port))
+                            server_status = True
+
+                    else:
+                        # this means that pgp_status is true, server_status is true, yet xor returned false, wtf?
+                        print("A WTF situation, this should never happen")
+                        print("pgp_status", pgp_status)
+                        print("server_status", server_status)
+                        print("xor", xor(pgp_status, server_status))
+                else:
+                    # pgp is not running, probably just died
+                    if server_status:
+                        # let's check if the port is really open
+                        if check_port(port=open_port):
+                            # let's close it up
+                            try:
+                                server.close()
+                            except Exception as err:
+                                print("Error while server.stop: {0}".format(str(err)))
+                                pass
+                            if not check_port(port=open_port):
+                                print("Port {0} Closeup success".format(open_port))
+                                send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                          subject="PGPWATCH - Status Change - PGP Down",
+                                          body="This is the {0}.<br>The PGPServer was up, now it <b>failed</b>. <br>Closing port {1} for GSLB.".format(socket.gethostname(), open_port))
+                                server_status = False
+                            else:
+                                print("Port {0} Closeup failed?".format(open_port))
+                        else:
+                            # the port is already closed
+                            # yet the server_status thinks it is open
+                            print("Port is closed but server_status if True, this is weird")
+                            server_status = False
+                    else:
+                        # This means that pgp_status is false, and server_status is false, yet xor returned false, wtf?
+                        print("Another WTF situation, this should never happen")
+                        print("pgp_status", pgp_status)
+                        print("server_status", server_status)
+                        print("xor", xor(pgp_status, server_status))
+            n += 1
+            time.sleep(check_period)
+    else:
+        runpoolstatus(mail_on_success, poolstatus_path=poolstatus_path, poolstatus_user=poolstatus_user,
+                      sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+                      sendmail_settings_path=sendmail_settings_path)

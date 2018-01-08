@@ -5,7 +5,7 @@ Documentation=http://rtfm.veritech.net
 
 [Service]
 Type=simple
-ExecStart=/root/vt/repmgrstatus.py
+ExecStart=/root/vt/repmgrwatch.py
 PIDFile=/var/run/pgpwatch/repmgrwatch.pid
 User=root
 Group=root

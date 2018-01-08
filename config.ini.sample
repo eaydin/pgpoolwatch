@@ -2,11 +2,19 @@
 check_period=10
 success_period=5
 mail_on_success=yes
+open_port = 5559
 
 [repmgr]
 check_period=10
 pgp_server_1=192.168.168.90
-pg_server_2=192.168.255.90
-force_open_port=yes
-port=5559
-pgp_port=5559
+pgp_server_2=192.168.255.90
+check_port = 5559
+open_port = 5559
+force_open = yes
+
+[general]
+sendmail=yes
+sendmail_path=/root/pgpoolwatch/sendmail.py
+sendmail_settings_path=/root/pgpoolwatch/args.txt
+poolstatus_path=/root/pgpoolwatch/poolstatus.py
+poolstatus_user=postgres

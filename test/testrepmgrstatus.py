@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
     description="""Checks Repmgr Status. This also depends on two pgp statuses. By Veriteknik - tech@veritech.net"""
 
-    parser = argparse.ArgumentParser(prog='repmgrstatus.py', formatter_class=argparse.RawDescriptionHelpFormatter,
+    parser = argparse.ArgumentParser(prog='repmgrwatch.py', formatter_class=argparse.RawDescriptionHelpFormatter,
                                     fromfile_prefix_chars="@", description=description)
     parser.add_argument("--config", help="Path to the config file")
 
