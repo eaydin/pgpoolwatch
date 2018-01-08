@@ -164,6 +164,17 @@ if __name__ == '__main__':
         check_period = 10
     print("Check Period: {0}".format(check_period))
 
+    # Read General Settings
+    sendmail_status = config.getboolean('general', 'sendmail')
+    sendmail_path = config.get('general', 'sendmail_path')
+    sendmail_settings_path = config.get('general', 'send_mail_settings_path')
+    poolstatus_path = config.get('general', 'poolstatus_path')
+    poolstatus_user = config.get('general', 'poolstatus_user')
+
+    open_port = 5559
+    # Read Port Settings
+    open_port = config.getint('repmgr', 'open_port')
+
     # Get the PGP Servers to check
     try:
         pgp_server_1 = config.get('repmgr', 'pgp_server_1')
