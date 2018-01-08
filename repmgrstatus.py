@@ -172,11 +172,11 @@ if __name__ == '__main__':
     try:
         sendmail_status = config.getboolean('general', 'sendmail')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading sendmail_status: {0}".format(str(err)))
     try:
-        sendmail_settings_path = config.get('general', 'sendmail_path')
+        sendmail_path = config.get('general', 'sendmail_path')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading sendmail_path: {0}".format(str(err)))
     try:
         sendmail_settings_path = config.get('general', 'send_mail_settings_path')
     except Exception as err:
