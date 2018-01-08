@@ -157,7 +157,7 @@ if __name__ == '__main__':
     # Get check period
     # First if argument specified, else read from config
     try:
-        check_period = config.getfloat('pgp', 'check_period')
+        check_period = config.getfloat('repmgr', 'check_period')
     except Exception as err:
         print("Error: {0}".format(str(err)))
         print("Sticking with default value for Check Period")
