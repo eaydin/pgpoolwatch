@@ -72,9 +72,10 @@ def get_masters():
         return False, []
 
 
-def main(period, pgpa, pgpb):
+def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail_status, sendmail_path,
+         sendmail_settings_path, forceopen=False):
 
-    server = DBWServer('0.0.0.0', 5559)
+    server = DBWServer('0.0.0.0', openport)
     server.close()
 
     while True:
@@ -84,14 +85,16 @@ def main(period, pgpa, pgpb):
                 print("Multiple Masters!")
                 send_mail(subject='PGPWATCH - Repmgr - Multiple Masters',
                           body='This is the {0}.<br>There are multiple masters in the cluster.<br>This situation should be fixed!'.format(socket.gethostname()))
-                if check_port():
+                if check_port('localhost', openport):
                     server.close()
                     print("Server Closed")
             else:
                 if masters[0] == socket.gethostname():
                     print("I AM THE MASTER!")
-                    if not check_port(pgpa) and not check_port(pgpb) and not check_port():
-                        print("Everybody is down, and we are not up? Bringing the 5559 up.")
+
+                    if not check_port(pgp_server_1, checkport) and not check_port(pgp_server_2, checkport) \
+                            and not check_port('localhost', openport):
+                        print("Everybody is down, and we are not up? Bringing the {0} up.".format(openport))
                         server.start()
                         body_text = """This is the {0}.<br> I am the current master, and all pgpool instances are down,
                         so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
@@ -99,19 +102,35 @@ def main(period, pgpa, pgpb):
                         is really routing traffic through me.""".format(socket.gethostname())
                         send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
 
-                    elif check_port() and (check_port(pgpa) or check_port(pgpb)):
-                        print("One of the pgpools is up, so we are bringing ourself down.")
-                        server.close()
-                        body_text="""This is the {0}.<br>I am the current master, and I used to serve as the DB
-                        instance. Yet one of the pgpools are back online. That's why I am closing port so that the GSLB
-                        won't route traffic through me. It is still best that
-                        you check on the system manually""".format(socket.gethostname())
-                        send_mail(subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
-
+                    elif (check_port(pgp_server_1, checkport) or check_port(pgp_server_2, checkport)):
+                        print("One of the pgpools is up...")
+                        if forceopen:
+                            print("Forceopen is active, checking local state...")
+                            if check_port('localhost', openport):
+                                print("Local port is open, keeping it open")
+                            else:
+                                print("Local port is closed, force opening...")
+                                server.start()
+                                body_text= """This is the {0}.<br>Even though one of the pgpool is up, the forceopen
+                                state is activated. So we are opening the port {1} on the master database.""".format(socket.gethostname(),
+                                                                                                                     openport)
+                                send_mail(subject='PGPWATCH - Repmgr - Up (Forceopen)', body=body_text)
+                        else:
+                            print("Forceopen is not active, checking local state...")
+                            if check_port('localhost', openport):
+                                print("Local port is open, we are bringing ourself down.")
+                                server.close()
+                                body_text = """This is the {0}.<br>I am the current master, and I used to serve as the DB
+                                instance. Yet one of the pgpools are back online. That's why I am closing port so that the GSLB
+                                won't route traffic through me. It is still best that
+                                you check on the system manually""".format(socket.gethostname())
+                                send_mail(subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
+                            else:
+                                print("Local port is already closed, nothing to do here.")
 
                 else:
                     print("I am a slave :(")
-                    if check_port():
+                    if check_port('localhost', openport):
                         print("I am serving yet I am a slave, this is wrong.")
                         server.close()
                         body_text="""This is the {0}.<br>I am a slave, yet somehow I was serving on port,
@@ -127,7 +146,7 @@ def main(period, pgpa, pgpb):
             Please check the cluster.""".format(socket.gethostname())
             send_mail(subject="PGPWATCH - Repmgr - Couldn't Get Masters", body=body_text)
 
-        time.sleep(period)
+        time.sleep(check_period)
 
 
 if __name__ == '__main__':
@@ -190,17 +209,17 @@ if __name__ == '__main__':
     except Exception as err:
         print("Error reading [general]poolstatus_user: {0}".format(str(err)))
 
-    open_port = 5559
+    openport = 5559
     # Read Port Settings
     try:
-        open_port = config.getint('repmgr', 'open_port')
+        openport = config.getint('repmgr', 'open_port')
     except Exception as err:
         print("Error reading [repmgr]open_port: {0}".format(str(err)))
 
-    check_port = 5559
+    checkport = 5559
     # Read check port of pgp servers
     try:
-        check_port = config.getint('repmgr', 'check_port')
+        checkport = config.getint('repmgr', 'check_port')
     except Exception as err:
         print("Error reading [repmgr]check_port: {0}".format(str(err)))
 
@@ -216,4 +235,6 @@ if __name__ == '__main__':
         print("Error: No PGP Servers Specified in the config file. Need two of those. If you only have 1 PGP server, specify the same IP/hostname")
         raise SystemError
 
-    main(check_period, pgp_server_1, pgp_server_2)
+    main(check_period=check_period, pgp_server_1=pgp_server_1, pgp_server_2=pgp_server_2, openport=openport,
+         checkport=checkport, sendmail_status=sendmail_status, sendmail_path=sendmail_path,
+         sendmail_settings_path=sendmail_settings_path)
