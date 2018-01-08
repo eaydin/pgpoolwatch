@@ -17,6 +17,56 @@ Also note that you don't need to have any pgpools at all. You can use the *repmg
 
 The scripts are tested in Python 2.7. Services (which reside in the *services* directory) are compatible with *systemd* and are tested on CentOS 7.
 
+### Topology in Action
+
+Below is a scenario with 2 GSLB's checking on 2 pgpools and 3 repmgr servers.
+
+* We want pgp.mydomain.com to return
+
+    * One of the pgpool servers if it is active.
+    * If both pgpool servers are down, return the master repmgr server.
+* We want db.mydomain.com to return the master repmgr server *only if pgpools are down*.
+
+The crucial point is *only if pgpools are down*. If we wanted db.mydomain.com to return the master repmgr *even if one of the pgpools were up*, then we'd set the `force_open` setting to `yes` in the `config.ini` file for the repmgr settings.
+
+```
+          +----------------------------------------------+
+          |                                              |
+     +----+                  GSLB 1&2                    +------+
+     |    |                                              |      |
+     |    +---+-----------------+-----------------+------+      |
+     |        |                 |                 |             |
+     |        |                 |                 |             |
+     |        | OK              |                 | OK          |
+     |        |                 |                 |             |
+     |        |                 |                 |             |
+     |    +---v----------+      |        +--------v-----+       |
+     |    |              |      |        |              |       |
+     |    |     PGP1     +---------------+     PGP2     |       |
+DEAD |    |   TCP 5559   |      |        |   TCP 5559   |       | DEAD
+     |    |              |      |        |              |       |
+     |    +--------------+      |        +--------------+       |
+     |                          |                               |
+     |                          |                               |
+     |                          | DEAD                          |
+     |                          |                               |
+     |                          |                               |
+     |   +------------+     +---v--------+     +------------+   |
+     |   |   REPMGR   |     |   REPMGR   |     |   REPMGR   |   |
+     +--->  (master)  +-----+  (slave1)  +-----+  (slave2)  <---+
+         |  TCP 5560  |     |  TCP 5560  |     |  TCP 5560  |
+         +------------+     +------------+     +------------+
+```
+
+The above scenario uses 5559 to open on PGP servers, and 5560 on REPMGR servers. We could have used the same ports, doesn't really matter.
+
+The GSLB will check on port 5559 on PGP1 and PGP2, if both are alive, pgpwatch will keep those ports open, so the GSLB will return single or both A records depending on the GSLB configuration.
+
+Also the GSLB will check on port 5560 all of the REPMGR servers. None of them will have their port open if they detect that PGP's have 5559 open. When both of the PGP's close their 5559 (i.e. failure) then the master REPMGR will open its 5560. Therefore the GSLB will detect it.
+
+It is possible to configure the GSLB to check the PGP's first, and when both fail, it can check the REPMGR ports, that way on a failure of PGP's, the pgp.mydomain.com can return the master repmgr even though none of the PGP's are running.
+
+
 ### Installation
 
 Assuming you have setup all of your pgpool and repmgr servers, all you need is Python 2.7 and git in your system.
