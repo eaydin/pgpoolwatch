@@ -13,8 +13,96 @@ Also the same principle follows for repmgr instances. Yet, the repmgr watching s
 The services are capable of sending mails using SMTP.
 
 You can have either 1 or 2 pgpools in your cluster. Works with both ways.
+Also note that you don't need to have any pgpools at all. You can use the *repmgrwatch* service only if you only want to monitor your repmgr cluster and detect the master server using TCP Port checks.
 
 The scripts are tested in Python 2.7. Services (which reside in the *services* directory) are compatible with *systemd* and are tested on CentOS 7.
+
+### Installation
+
+Assuming you have setup all of your pgpool and repmgr servers, all you need is Python 2.7 and git in your system.
+
+#### repmgr
+
+Clone this repository in a path (i.e. `/root/`).
+```bash
+git clone https://github.com/eaydin/pgpoolwatch
+```
+
+Enter the directory, copy and edit the setting files.
+
+```bash
+cd pgpoolwatch
+cp config.ini.sample config.ini
+cp args.txt.sample args.txt
+```
+
+Edit `config.ini` and if you enable `sendmail` in it, then you better edit `args.txt` too.
+
+You can check if the script is running correctly by running the `repmgrwatch.py` script.
+
+If everything seems normal, install the repmgrwatch service to systemd path and enable.
+
+```bash
+cp services/repmgrwatch.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable repmgrwatch
+```
+
+Start the service
+```bash
+systemctl start repmgrwatch
+
+```
+
+#### pgpool
+
+Clone this repository in a path (i.e. `/root`/).
+```bash
+git clone https://github.com/eaydin/pgpoolwatch
+```
+
+Enter the directory, copy and edit the setting files.
+
+```bash
+cd pgpoolwatch
+cp config.ini.sample config.ini
+cp args.txt.sample args.txt
+```
+
+Edit `config.ini` and if you enable `sendmail` in it, then you better edit `args.txt` too.
+
+It is best to run the `poolstatus.py` script as the `postgres` user. So you better create a hardlink of it to the users home directory.
+
+Assuming the home directory of user `postgres` is `/var/lib/pgsql` you can
+
+```bash
+ln /root/pgpoolwatch/poolstatus.py /var/lib/pgsql/poolstatus.py
+chown postgres: /root/pgpoolwatch/poolstatus.py
+chmod +x /root/pgpoolwatch/poolstatus.py
+```
+
+This way the *postgres* user can run the script.
+Note that it is a good idea to have both *postgres* user and *root* user to have access to the repmgr servers. In order to do that, create an SSH RSA public/private key pair and add it to the postgres user in the repmgr server. Also copy the private key to the root users `.ssh` folder so that it can also access. It is a good idea to disable `StrictHostKeyChecking` in `ssh_config`, yet it is a better idea to keep it asking but creating first SSH connections from both root and postgres users.
+
+Test the poolstatus script as postgres user.
+```bash
+runuser -l postgres -c '/var/lib/pgsql/poolstatus.py'
+```
+
+Also test the pgpwatch script (as root user).
+```bash
+cd /root/pgpoolwatch
+./pgpwatch.py
+```
+
+If you are happy with the results, install, enable and start the pgpwatch systemd service.
+
+```bash
+cp services/pgpwatch.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable pgpwatch
+systemctl start pgpwatch
+```
 
 ### Sample poolstatus Output
 
