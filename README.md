@@ -30,32 +30,33 @@ Below is a scenario with 2 GSLB's checking on 2 pgpools and 3 repmgr servers.
 The crucial point is *only if pgpools are down*. If we wanted db.mydomain.com to return the master repmgr *even if one of the pgpools were up*, then we'd set the `force_open` setting to `yes` in the `config.ini` file for the repmgr settings.
 
 ```
-          +----------------------------------------------+
-          |                                              |
-     +----+                  GSLB 1&2                    +------+
-     |    |                                              |      |
-     |    +---+-----------------+-----------------+------+      |
-     |        |                 |                 |             |
-     |        |                 |                 |             |
-     |        | OK              |                 | OK          |
-     |        |                 |                 |             |
-     |        |                 |                 |             |
-     |    +---v----------+      |        +--------v-----+       |
-     |    |              |      |        |              |       |
-     |    |     PGP1     +---------------+     PGP2     |       |
-DEAD |    |   TCP 5559   |      |        |   TCP 5559   |       | DEAD
-     |    |              |      |        |              |       |
-     |    +--------------+      |        +--------------+       |
-     |                          |                               |
-     |                          |                               |
-     |                          | DEAD                          |
-     |                          |                               |
-     |                          |                               |
-     |   +------------+     +---v--------+     +------------+   |
-     |   |   REPMGR   |     |   REPMGR   |     |   REPMGR   |   |
-     +--->  (master)  +-----+  (slave1)  +-----+  (slave2)  <---+
-         |  TCP 5560  |     |  TCP 5560  |     |  TCP 5560  |
-         +------------+     +------------+     +------------+
+               +----------------------------------------------+
+               |                                              |
+          +----+                  GSLB 1&2                    +------+
+          |    |                                              |      |
+          |    +---+-----------------+-----------------+------+      |
+          |        |                 |                 |             |
+          |        |                 |                 |             |
+          |        | OK              |                 | OK          |
+          |        |                 |                 |             |
+          |        |                 |                 |             |
+          |    +---v----------+      |        +--------v-----+       |
+          |    |              |      |        |              |       |
+          |    |     PGP1     +---------------+     PGP2     |       |
+   DEAD   |    |   TCP 5559   |      |        |   TCP 5559   |       | DEAD
+(OR ALIVE)|    |              |      |        |              |       |
+          |    +--------------+      |        +--------------+       |
+          |                          |                               |
+          |                          |                               |
+          |                          | DEAD                          |
+          |                          |                               |
+          |                          |                               |
+          |   +------------+     +---v--------+     +------------+   |
+          |   |   REPMGR   |     |   REPMGR   |     |   REPMGR   |   |
+          +--->  (master)  +-----+  (slave1)  +-----+  (slave2)  <---+
+              |  TCP 5560  |     |  TCP 5560  |     |  TCP 5560  |
+              +------------+     +------------+     +------------+
+
 ```
 
 The above scenario uses 5559 to open on PGP servers, and 5560 on REPMGR servers. We could have used the same ports, doesn't really matter.
@@ -65,6 +66,8 @@ The GSLB will check on port 5559 on PGP1 and PGP2, if both are alive, pgpwatch w
 Also the GSLB will check on port 5560 all of the REPMGR servers. None of them will have their port open if they detect that PGP's have 5559 open. When both of the PGP's close their 5559 (i.e. failure) then the master REPMGR will open its 5560. Therefore the GSLB will detect it.
 
 It is possible to configure the GSLB to check the PGP's first, and when both fail, it can check the REPMGR ports, that way on a failure of PGP's, the pgp.mydomain.com can return the master repmgr even though none of the PGP's are running.
+
+If we'd set the `force_open=yes` configuration in the `config.ini` for the `repmgr` section, then the `DEAD (OR ALIVE)`  connection in the diagram would have been `ALIVE/OK`.
 
 
 ### Installation
