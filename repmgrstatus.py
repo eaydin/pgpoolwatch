@@ -223,6 +223,13 @@ if __name__ == '__main__':
     except Exception as err:
         print("Error reading [repmgr]check_port: {0}".format(str(err)))
 
+    force_open = False
+    # Read force_open settings og repmgr server
+    try:
+        force_open = config.getboolean('repmgr', 'force_open')
+    except Exception as err:
+        print("Error reading [repmgr]force_open: {0}".format(str(err)))
+
     # Get the PGP Servers to check
     try:
         pgp_server_1 = config.get('repmgr', 'pgp_server_1')
@@ -237,4 +244,4 @@ if __name__ == '__main__':
 
     main(check_period=check_period, pgp_server_1=pgp_server_1, pgp_server_2=pgp_server_2, openport=openport,
          checkport=checkport, sendmail_status=sendmail_status, sendmail_path=sendmail_path,
-         sendmail_settings_path=sendmail_settings_path)
+         sendmail_settings_path=sendmail_settings_path, forceopen=force_open)
