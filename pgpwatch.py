@@ -127,6 +127,13 @@ if __name__ == '__main__':
         mail_on_success = args.mail_on_success
     print("Mail on Success:", mail_on_success)
 
+    # Initiate default values for general settings
+    sendmail_status = False
+    sendmail_path = '/root/pgpoolwatch/sendmail.py'
+    sendmail_settings_path = '/root/pgpoolwatch/args.txt'
+    poolstatus_path = '/var/lib/pgsql/poolstatus.py'
+    poolstatus_user = 'postgres'
+
     # Read General Settings
     sendmail_status = config.getboolean('general', 'sendmail')
     sendmail_path = config.get('general', 'sendmail_path')
