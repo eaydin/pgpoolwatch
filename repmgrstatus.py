@@ -74,9 +74,6 @@ def get_masters():
 
 def main(period, pgpa, pgpb):
 
-    pgpa_s = check_port(pgpa)
-    pgpb_s = check_port(pgpb)
-
     server = DBWServer('0.0.0.0', 5559)
     server.close()
 
