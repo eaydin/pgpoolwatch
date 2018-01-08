@@ -135,15 +135,33 @@ if __name__ == '__main__':
     poolstatus_user = 'postgres'
 
     # Read General Settings
-    sendmail_status = config.getboolean('general', 'sendmail')
-    sendmail_path = config.get('general', 'sendmail_path')
-    sendmail_settings_path = config.get('general', 'sendmail_settings_path')
-    poolstatus_path = config.get('general', 'poolstatus_path')
-    poolstatus_user = config.get('general', 'poolstatus_user')
+    try:
+        sendmail_status = config.getboolean('general', 'sendmail')
+    except Exception as err:
+        print("Error reading [general]sendmail_status: {0}".format(str(err)))
+    try:
+        sendmail_path = config.get('general', 'sendmail_path')
+    except Exception as err:
+        print("Error reading [general]sendmail_path: {0}".format(str(err)))
+    try:
+        sendmail_settings_path = config.get('general', 'send_mail_settings_path')
+    except Exception as err:
+        print("Error reading [general]sendmail_settings_path: {0}".format(str(err)))
+    try:
+        poolstatus_path = config.get('general', 'poolstatus_path')
+    except Exception as err:
+        print("Error reading [general]poolstatus_path: {0}".format(str(err)))
+    try:
+        poolstatus_user = config.get('general', 'poolstatus_user')
+    except Exception as err:
+        print("Error reading [general]poolstatus_user: {0}".format(str(err)))
 
     open_port = 5559
     # Read Port Settings
-    open_port = config.getint('pgp', 'open_port')
+    try:
+        open_port = config.getint('pgp', 'open_port')
+    except Exception as err:
+        print("Error reading [pgp]open_port: {0}".format(str(err)))
 
     if not args.run_once:
 
