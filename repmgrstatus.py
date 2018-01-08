@@ -197,6 +197,13 @@ if __name__ == '__main__':
     except Exception as err:
         print("Error: {0}".format(str(err)))
 
+    check_port = 5559
+    # Read check port of pgp servers
+    try:
+        check_port = config.getint('repmgr', 'check_port')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
+
     # Get the PGP Servers to check
     try:
         pgp_server_1 = config.get('repmgr', 'pgp_server_1')
