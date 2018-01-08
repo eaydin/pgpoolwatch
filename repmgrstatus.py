@@ -164,12 +164,34 @@ if __name__ == '__main__':
         check_period = 10
     print("Check Period: {0}".format(check_period))
 
+    # Initiate default values for general settings
+    sendmail_status = False
+    sendmail_path = '/root/pgpoolwatch/sendmail.py'
+    sendmail_settings_path = '/root/pgpoolwatch/args.txt'
+    poolstatus_path = '/var/lib/pgsql/poolstatus.py'
+    poolstatus_user = 'postgres'
+
     # Read General Settings
-    sendmail_status = config.getboolean('general', 'sendmail')
-    sendmail_path = config.get('general', 'sendmail_path')
-    sendmail_settings_path = config.get('general', 'send_mail_settings_path')
-    poolstatus_path = config.get('general', 'poolstatus_path')
-    poolstatus_user = config.get('general', 'poolstatus_user')
+    try:
+        sendmail_status = config.getboolean('general', 'sendmail')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
+    try:
+        sendmail_settings_path = config.get('general', 'sendmail_path')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
+    try:
+        sendmail_settings_path = config.get('general', 'send_mail_settings_path')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
+    try:
+        poolstatus_path = config.get('general', 'poolstatus_path')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
+    try:
+        poolstatus_user = config.get('general', 'poolstatus_user')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
 
     open_port = 5559
     # Read Port Settings
