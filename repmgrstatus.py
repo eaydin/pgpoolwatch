@@ -84,7 +84,7 @@ def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail
             if len(masters) > 1:
                 print("Multiple Masters!")
                 if sendmail_status:
-                    send_mail(subject='PGPWATCH - Repmgr - Multiple Masters',
+                    send_mail(path=sendmail_path, arguments=sendmail_settings_path, subject='PGPWATCH - Repmgr - Multiple Masters',
                           body='This is the {0}.<br>There are multiple masters in the cluster.<br>This situation should be fixed!'.format(socket.gethostname()))
                 if check_port('localhost', openport):
                     server.close()
@@ -102,7 +102,8 @@ def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail
                             so the GSLB is probably routing traffic through me. It is best that you fix the pgpools as soon
                             as possible.<br>Also double check the the GSLB
                             is really routing traffic through me.""".format(socket.gethostname())
-                            send_mail(subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
+                            send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                      subject='PGPWATCH - Repmgr - UP (This is bad)', body=body_text)
 
                     elif (check_port(pgp_server_1, checkport) or check_port(pgp_server_2, checkport)):
                         print("One of the pgpools is up...")
@@ -117,7 +118,8 @@ def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail
                                     body_text= """This is the {0}.<br>Even though one of the pgpool is up, the forceopen
                                     state is activated. So we are opening the port {1} on the master database.""".format(socket.gethostname(),
                                                                                                                          openport)
-                                    send_mail(subject='PGPWATCH - Repmgr - Up (Forceopen)', body=body_text)
+                                    send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                              subject='PGPWATCH - Repmgr - Up (Forceopen)', body=body_text)
                         else:
                             print("Forceopen is not active, checking local state...")
                             if check_port('localhost', openport):
@@ -128,7 +130,8 @@ def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail
                                     instance. Yet one of the pgpools are back online. That's why I am closing port so that the GSLB
                                     won't route traffic through me. It is still best that
                                     you check on the system manually""".format(socket.gethostname())
-                                    send_mail(subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
+                                    send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                              subject='PGPWATCH - Repmgr - Down (This is good)', body=body_text)
                             else:
                                 print("Local port is already closed, nothing to do here.")
 
@@ -142,7 +145,8 @@ def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail
                             don't know how this happened (probably a master/slave switch occurred). I am closing port so
                             that the GSLB won't route traffic through my incase both pgpools are down.
                             Nothing to worry about, just a notice.""".format(socket.gethostname())
-                            send_mail(subject='PGPWATCH - Repmgr - Slave Stepping Down (This is good)', body=body_text)
+                            send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                                      subject='PGPWATCH - Repmgr - Slave Stepping Down (This is good)', body=body_text)
         else:
             print("Something went wrong getting the masters")
             server.close()
@@ -150,7 +154,8 @@ def main(check_period, pgp_server_1, pgp_server_2, openport, checkport, sendmail
                 body_text="""This is the {0}.<br>I failed getting the masters of the cluster.
                 If you are not testing something, this isn't good.
                 Please check the cluster.""".format(socket.gethostname())
-                send_mail(subject="PGPWATCH - Repmgr - Couldn't Get Masters", body=body_text)
+                send_mail(path=sendmail_path, arguments=sendmail_settings_path,
+                          subject="PGPWATCH - Repmgr - Couldn't Get Masters", body=body_text)
 
         time.sleep(check_period)
 
