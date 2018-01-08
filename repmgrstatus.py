@@ -156,9 +156,9 @@ if __name__ == '__main__':
     try:
         check_period = config.getfloat('repmgr', 'check_period')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
-        print("Sticking with default value for Check Period")
+        print("Error reading [repmgr]check_period: {0}".format(str(err)))
         check_period = 10
+        print("Sticking with default value {0} for Check Period".format(check_period))
     print("Check Period: {0}".format(check_period))
 
     # Initiate default values for general settings
@@ -172,48 +172,48 @@ if __name__ == '__main__':
     try:
         sendmail_status = config.getboolean('general', 'sendmail')
     except Exception as err:
-        print("Error reading sendmail_status: {0}".format(str(err)))
+        print("Error reading [general]sendmail_status: {0}".format(str(err)))
     try:
         sendmail_path = config.get('general', 'sendmail_path')
     except Exception as err:
-        print("Error reading sendmail_path: {0}".format(str(err)))
+        print("Error reading [general]sendmail_path: {0}".format(str(err)))
     try:
         sendmail_settings_path = config.get('general', 'send_mail_settings_path')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading [general]sendmail_settings_path: {0}".format(str(err)))
     try:
         poolstatus_path = config.get('general', 'poolstatus_path')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading [general]poolstatus_path: {0}".format(str(err)))
     try:
         poolstatus_user = config.get('general', 'poolstatus_user')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading [general]poolstatus_user: {0}".format(str(err)))
 
     open_port = 5559
     # Read Port Settings
     try:
         open_port = config.getint('repmgr', 'open_port')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading [repmgr]open_port: {0}".format(str(err)))
 
     check_port = 5559
     # Read check port of pgp servers
     try:
         check_port = config.getint('repmgr', 'check_port')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading [repmgr]check_port: {0}".format(str(err)))
 
     # Get the PGP Servers to check
     try:
         pgp_server_1 = config.get('repmgr', 'pgp_server_1')
         pgp_server_2 = config.get('repmgr', 'pgp_server_2')
     except Exception as err:
-        print("Error: {0}".format(str(err)))
+        print("Error reading [repmgr]pgp_server_1 or 2: {0}".format(str(err)))
         raise SystemError
 
     if not pgp_server_1 or not pgp_server_2:
-        print("Error: No PGP Servers Specified in the config file. Need two of those.")
+        print("Error: No PGP Servers Specified in the config file. Need two of those. If you only have 1 PGP server, specify the same IP/hostname")
         raise SystemError
 
     main(check_period, pgp_server_1, pgp_server_2)
