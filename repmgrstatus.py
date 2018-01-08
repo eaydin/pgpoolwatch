@@ -195,7 +195,10 @@ if __name__ == '__main__':
 
     open_port = 5559
     # Read Port Settings
-    open_port = config.getint('repmgr', 'open_port')
+    try:
+        open_port = config.getint('repmgr', 'open_port')
+    except Exception as err:
+        print("Error: {0}".format(str(err)))
 
     # Get the PGP Servers to check
     try:
