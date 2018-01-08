@@ -243,15 +243,19 @@ This is the main configuration file for both pgpwatch and repmgr watch services.
 
 It consists of three sections.
 
-#####[pgp]
+**[pgp]**
+
 These settings only apply to pgpwatch
+
 * **check_period**: The period (in seconds) to run check.
 * **success_period**: The number of checks (not seconds!) should be elapsed to send a "System is Successfully running" mail. So if `check_period=5` and `success_period=500` than the system will be checked every 5 seconds, and a "success" mail will be sent every 2500 seconds.
 * **mail_on_success**: Either `yes` or `no`. Should we send a mail even when the system is running smoothly?
 * **open_port**: Port to open when pgpool is running. Default `5559`.
 
-#####[repmgr]
+**[repmgr]**
+
 These settings only apply to repmgrwatch
+
 * **check_period**: The period (in seconds) to run check.
 * **pgp_server_1**: IP or hostname of the first pgpool server.
 * **pgp_server_2**: IP or hostname of the second pgpool server. If you only have one pgpool server, keep it the same with `pgp_server_1`.
@@ -259,8 +263,10 @@ These settings only apply to repmgrwatch
 * **open_port**: Port to open when repmgr is running. Default `5559`.
 * **force_open**: Either `yes` or `no`. Should we open the port on repmgr even though pgpool instances are running correctly? Default is `no`.
 
-#####[general]
+**[general]**
+
 These settings apply both to pgpwatch and repmgrwatch
+
 * **sendmail**: Either `yes` or `no`. Should we send mails?
 * **sendmail_path**: Path to the sendmail script. Default is `/root/pgpoolwatch/sendmail.py`
 * **sendmail_settings_path**: Path of arguments to pass to the sendmail script. Default is `/root/pgpoolwatch/args.txt`
