@@ -46,7 +46,7 @@ class DBWServer(SocketServer.TCPServer):
         return SocketServer.TCPServer.server_close(self)
 
 
-def send_mail(path='/root/vt/sendmail.py', arguments='@/root/vt/args.txt', subject="PGPWATCH", failed_node='none', new_master='none', body=None):
+def send_mail(path='/root/pgpoolwatch/sendmail.py', arguments='@/root/pgpoolwatch/args.txt', subject="PGPWATCH", failed_node='none', new_master='none', body=None):
     p = subprocess.Popen(["/usr/bin/python", path, arguments, "--subject={0}".format(subject), "--failed-node={0}".format(failed_node),
                           "--new-master={0}".format(new_master), "--body={0}".format(body)])
     p.communicate()[0]
