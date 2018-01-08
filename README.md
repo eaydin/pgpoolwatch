@@ -229,3 +229,67 @@ The script will auto detect which one is the master and which one is the slave.
 When calling this script from within the pgpwatch service, you can specify its path and from which user to call it. So it may be a good idea to create a hardlink of this file into the relevant users home directory according to your system structure.
 
 Tested with Python 2.7
+
+### Configuration Files
+
+#### config.ini
+
+This is the main configuration file for both pgpwatch and repmgr watch services. The default path is `/root/pgpwatch/config.ini` yet while running both scripts, it can be specified as following arguments:
+
+```bash
+./pgpwatch.py --config=/path/to/config.ini
+./repmgrwatch.py --config=/path/to/config.ini
+```
+
+It consists of three sections.
+
+#####[pgp]
+These settings only apply to pgpwatch
+* **check_period**: The period (in seconds) to run check.
+* **success_period**: The number of checks (not seconds!) should be elapsed to send a "System is Successfully running" mail. So if `check_period=5` and `success_period=500` than the system will be checked every 5 seconds, and a "success" mail will be sent every 2500 seconds.
+* **mail_on_success**: Either `yes` or `no`. Should we send a mail even when the system is running smoothly?
+* **open_port**: Port to open when pgpool is running. Default `5559`.
+
+#####[repmgr]
+These settings only apply to repmgrwatch
+* **check_period**: The period (in seconds) to run check.
+* **pgp_server_1**: IP or hostname of the first pgpool server.
+* **pgp_server_2**: IP or hostname of the second pgpool server. If you only have one pgpool server, keep it the same with `pgp_server_1`.
+* **check_port**: Port number to check on pgpool servers. Default `5559`.
+* **open_port**: Port to open when repmgr is running. Default `5559`.
+* **force_open**: Either `yes` or `no`. Should we open the port on repmgr even though pgpool instances are running correctly? Default is `no`.
+
+#####[general]
+These settings apply both to pgpwatch and repmgrwatch
+* **sendmail**: Either `yes` or `no`. Should we send mails?
+* **sendmail_path**: Path to the sendmail script. Default is `/root/pgpoolwatch/sendmail.py`
+* **sendmail_settings_path**: Path of arguments to pass to the sendmail script. Default is `/root/pgpoolwatch/args.txt`
+* **poolstatus_path**: Path of the poolstatus script. Default is `/root/pgpoolwatch/poolstatus.py`
+* **poolstatus_user**: Username to run the poolstatus script. Default is `postgres`
+
+#### args.txt
+
+This is the arguments file for the sendmail script. This is a seperate file from the config.ini only for historical reasons. They should be merged in the future.
+Default values are as following (self explaining):
+```
+--user=sender@email.com
+--password=SuperSecr3tPassw0rd
+--sender=sender@email.com
+--server=mail.emailcom
+--port=587
+--subject=PGPOOL Status Script - Failure
+--receivers=bill@microsoft.com page@google.com
+```
+
+Other optional arguments are:
+```
+--failed-node=Name of the failed node
+--new-master=Name of the new repmgr master
+--body=The message body. <br>Better to write it in <b>HTML</b>
+```
+
+Passing the args.txt to the sendmail script:
+
+```bash
+python /path/to/sendmail.py @/other/path/to/args.txt
+```
