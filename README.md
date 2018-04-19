@@ -109,7 +109,7 @@ systemctl start repmgrwatch
 
 #### pgpool
 
-Clone this repository in a path (i.e. `/root`/).
+Clone this repository in a path (i.e. `/root/`).
 ```bash
 git clone https://github.com/eaydin/pgpoolwatch
 ```
