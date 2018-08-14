@@ -8,7 +8,7 @@ This project started off with a simple script (which is now *poolstatus.py*) to 
 Now it has multiple servers that run alongside pgpool and repmgr to notify external services.
 
 The basic idea is to detect wether one of the pgpool instances is correctly running (using *pgpwatch*). If it does, than a specific port on the server is open.
-Also the same principle follows for repmgr instances. Yet, the repmgr watching services (i.e. *repmgrwatch*) can check on their corresponding pgpool servers and open their TCP ports according to the status of the pgpool status. Also only the **master** repmgr port is opened, so it is easy to distinguish with host to use for writing.
+Also the same principle follows for repmgr instances. Yet, the repmgr watching services (i.e. *repmgrwatch*) can check on their corresponding pgpool servers and open their TCP ports according to the status of the pgpool status. Also only the **master** repmgr port is opened, so it is easy to distinguish which host to use for writing.
 
 The services are capable of sending mails using SMTP.
 
