@@ -170,7 +170,7 @@ When you run the *poolstatus.py* script alone, you should get the following outp
 Output of: show pool_nodes
  node_id | hostname | port | status | lb_weight |  role   | select_cnt | load_balance_node | replication_delay
 ---------+----------+------+--------+-----------+---------+------------+-------------------+-------------------
- 0       |  dbser1  | 5432 | down   | 0.500000  | standby | 0          | false             | 0
+ 0       |  dbser1  | 5432 | up     | 0.500000  | standby | 0          | false             | 0
  1       |  dbser2  | 5432 | up     | 0.500000  | primary | 0          | true              | 0
 (2 rows)
 
